@@ -82,9 +82,10 @@ export function Dialog({ open, onClose, title, description, children, footer, in
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className="relative flex max-h-[92dvh] w-full animate-dialog flex-col overflow-hidden rounded-t-[22px] bg-surface shadow-raised sm:max-w-lg sm:rounded-[22px]"
+        className="relative flex max-h-[92dvh] w-full animate-dialog flex-col overflow-hidden rounded-t-[28px] bg-surface pb-[env(safe-area-inset-bottom,0px)] shadow-raised sm:max-w-lg sm:rounded-[24px]"
       >
-        <div className="flex items-start gap-3 px-5 pb-2 pt-5 sm:px-6 sm:pt-6">
+        <div aria-hidden className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-line-strong sm:hidden" />
+        <div className="flex items-start gap-3 px-5 pb-2 pt-4 sm:px-6 sm:pt-6">
           {icon && (
             <span
               className={cn(
@@ -96,7 +97,7 @@ export function Dialog({ open, onClose, title, description, children, footer, in
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-lg font-semibold leading-snug text-ink">
+            <h2 id={titleId} className="text-xl font-extrabold leading-snug text-ink">
               {title}
             </h2>
             {description && (
@@ -116,7 +117,7 @@ export function Dialog({ open, onClose, title, description, children, footer, in
         </div>
         {children && <div className="overflow-y-auto px-5 py-3 text-sm leading-relaxed text-ink sm:px-6">{children}</div>}
         {footer && (
-          <div className="flex flex-col-reverse gap-2 border-t border-line bg-canvas/60 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">{footer}</div>
+          <div className="flex flex-col-reverse gap-2 px-5 pb-5 pt-3 sm:flex-row sm:justify-end sm:px-6">{footer}</div>
         )}
       </div>
     </div>,

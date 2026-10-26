@@ -53,7 +53,7 @@ export function UrgentHelpPage() {
           ) : (
             <ul className="mt-4 space-y-3">
               {verifiedContacts.map((c) => (
-                <li key={c.name} className="rounded-2xl border border-line p-4">
+                <li key={c.name} className="rounded-2xl bg-canvas p-4">
                   <p className="font-medium">{c.name}</p>
                   <p className="mt-0.5">{c.href ? <a href={c.href} className="link">{c.contact}</a> : c.contact}</p>
                   <p className="mt-1 text-sm text-muted">{c.description}</p>
@@ -88,7 +88,7 @@ export function ForProfessionalsPage() {
       />
       <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((i) => (
-          <li key={i.title} className="rounded-[var(--radius-card)] border border-line bg-surface p-5 shadow-soft">
+          <li key={i.title} className="rounded-[var(--radius-card)] bg-surface p-5 shadow-soft">
             <span className="flex size-10 items-center justify-center rounded-full bg-sage-100 text-brand-800 [&_svg]:size-5">{i.icon}</span>
             <h2 className="mt-4 font-semibold">{i.title}</h2>
             <p className="mt-1.5 text-sm leading-relaxed text-muted">{i.text}</p>
@@ -97,7 +97,7 @@ export function ForProfessionalsPage() {
       </ul>
       <Card className="mt-10 grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-center">
         <div>
-          <h2 className="font-display text-2xl font-semibold">Jak se zapojit</h2>
+          <h2 className="font-display text-2xl font-extrabold">Jak se zapojit</h2>
           <ol className="mt-4 list-decimal space-y-1.5 pl-5 leading-relaxed text-ink/90">
             <li>Vyplníš krátkou přihlášku: profesní jméno, roli, shrnutí kvalifikace, zaměření, jazyky a kapacitu.</li>
             <li>Provozní tým přihlášku posoudí, případně požádá o doplnění.</li>

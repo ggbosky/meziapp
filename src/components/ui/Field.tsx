@@ -3,10 +3,10 @@ import { Check, CircleAlert } from 'lucide-react';
 import { cn } from './cn';
 
 const control =
-  'block w-full rounded-[var(--radius-field)] border bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-muted/70 transition-colors focus:outline-none focus-visible:outline-none focus:border-brand-700 focus:ring-4 focus:ring-brand-700/15 disabled:bg-sage-50 disabled:text-muted';
+  'block w-full rounded-[var(--radius-field)] border-2 bg-sage-50 px-4 py-2.5 text-base text-ink placeholder:text-muted/70 transition-colors focus:outline-none focus-visible:outline-none focus:border-brand-600 focus:bg-surface focus:ring-4 focus:ring-brand-600/15 disabled:opacity-60';
 
 function controlClass(error?: string) {
-  return cn(control, error ? 'border-danger' : 'border-line-strong hover:border-brand-600');
+  return cn(control, error ? 'border-danger' : 'border-line hover:border-brand-300');
 }
 
 interface FieldShellProps {
@@ -23,7 +23,7 @@ function FieldShell({ id, label, hint, error, required, children, counter }: Fie
   return (
     <div className="min-w-0">
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-sm font-medium text-ink">
+        <label htmlFor={id} className="text-sm font-semibold text-ink">
           {label}
           {required && <span className="text-muted"> (povinné)</span>}
         </label>
@@ -67,7 +67,7 @@ export function TextField({ label, hint, error, id: givenId, required, className
     <FieldShell id={id} label={label} hint={hint} error={error} required={required}>
       <input
         id={id}
-        className={cn(controlClass(error), 'min-h-11', className)}
+        className={cn(controlClass(error), 'min-h-12', className)}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(id, hint, error)}
         required={required}
@@ -135,7 +135,7 @@ export function SelectField({ label, hint, error, id: givenId, options, classNam
         id={id}
         className={cn(
           controlClass(error),
-          'min-h-11 appearance-none bg-[url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2355665c%27%20stroke-width%3D%272%27%3E%3Cpath%20d%3D%27m6%209%206%206%206-6%27/%3E%3C/svg%3E")] bg-[length:1.1rem] bg-[right_0.8rem_center] bg-no-repeat pr-10',
+          'min-h-12 appearance-none bg-[url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2355665c%27%20stroke-width%3D%272%27%3E%3Cpath%20d%3D%27m6%209%206%206%206-6%27/%3E%3C/svg%3E")] bg-[length:1.1rem] bg-[right_0.8rem_center] bg-no-repeat pr-10',
           className,
         )}
         aria-invalid={error ? true : undefined}
@@ -175,7 +175,7 @@ export function ChipCheckboxGroup<T extends string>({
   const id = useId();
   return (
     <fieldset aria-describedby={describedBy(id, hint, error)} aria-invalid={error ? true : undefined}>
-      <legend className="mb-1.5 text-sm font-medium text-ink">
+      <legend className="mb-1.5 text-sm font-semibold text-ink">
         {legend}
         {required && <span className="text-muted"> (povinné)</span>}
       </legend>
@@ -191,8 +191,8 @@ export function ChipCheckboxGroup<T extends string>({
             <label
               key={option.value}
               className={cn(
-                'relative inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-700',
-                checked ? 'border-brand-800 bg-brand-800 text-white' : 'border-line-strong bg-surface text-ink hover:border-brand-600',
+                'relative inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border-2 px-4 py-1.5 text-sm font-semibold transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-700',
+                checked ? 'border-brand-800 bg-brand-800 text-white' : 'border-line bg-surface text-ink hover:border-brand-300',
               )}
             >
               <input
@@ -227,7 +227,7 @@ export function RadioCardGroup<T extends string>({
   const id = useId();
   return (
     <fieldset aria-describedby={describedBy(id, hint, error)}>
-      <legend className="mb-2 text-sm font-medium text-ink">{legend}</legend>
+      <legend className="mb-2 text-sm font-semibold text-ink">{legend}</legend>
       <div className={cn('grid gap-2', columns === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
         {options.map((option) => {
           const checked = value === option.value;
@@ -235,8 +235,8 @@ export function RadioCardGroup<T extends string>({
             <label
               key={option.value}
               className={cn(
-                'flex min-h-12 cursor-pointer items-start gap-3 rounded-[var(--radius-field)] border p-3.5 text-sm transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-700',
-                checked ? 'border-brand-700 bg-sage-50 ring-1 ring-brand-700' : 'border-line-strong bg-surface hover:border-brand-600',
+                'flex min-h-14 cursor-pointer items-start gap-3 rounded-[var(--radius-field)] border-2 p-3.5 text-sm transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-700',
+                checked ? 'border-brand-700 bg-sage-50' : 'border-line bg-surface hover:border-brand-300',
               )}
             >
               <input
@@ -248,7 +248,7 @@ export function RadioCardGroup<T extends string>({
                 className="mt-0.5 size-4 shrink-0 accent-brand-800"
               />
               <span>
-                <span className="block font-medium text-ink">{option.label}</span>
+                <span className="block font-semibold text-ink">{option.label}</span>
                 {option.description && <span className="mt-0.5 block text-[0.8rem] leading-relaxed text-muted">{option.description}</span>}
               </span>
             </label>

@@ -9,7 +9,7 @@ interface CardProps extends HTMLAttributes<HTMLElement> {
 export function Card({ as: Tag = 'div', padded = true, className, ...rest }: CardProps) {
   return (
     <Tag
-      className={cn('rounded-[var(--radius-card)] border border-line bg-surface shadow-soft', padded && 'p-5 sm:p-6', className)}
+      className={cn('rounded-[var(--radius-card)] bg-surface shadow-soft', padded && 'p-5 sm:p-6', className)}
       {...rest}
     />
   );

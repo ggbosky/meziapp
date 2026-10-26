@@ -1,6 +1,6 @@
-import { ArrowRight, BriefcaseMedical, CircleCheck, FileClock, FilePlus2, ShieldUser, UserRound } from 'lucide-react';
+import { ArrowRight, ChevronRight, BriefcaseMedical, CircleCheck, FileClock, FilePlus2, ShieldUser, UserRound } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCurrentUser, useServices } from '../../app/AppContext';
 import { ResetDemoButton } from '../../components/layout/ResetDemoButton';
 import { homeFor } from '../../components/layout/roleHome';
@@ -62,7 +62,7 @@ function AccountButton({ user, label, target, current }: { user: User; label: st
   const navigate = useNavigate();
   const toast = useToast();
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-line bg-canvas/60 p-4 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-3 rounded-2xl bg-canvas p-4 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Avatar name={user.displayName} tone={user.displayName.length} size="sm" />
         <div className="min-w-0">
@@ -184,6 +184,27 @@ export function TryDemoPage() {
           <ResetDemoButton className="mt-5" />
         </Card>
       </div>
+
+      <nav aria-labelledby="more-title" className="mt-10">
+        <h2 id="more-title" className="mb-3 text-xl font-extrabold">
+          Další informace
+        </h2>
+        <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] bg-surface shadow-soft">
+          {[
+            { to: '/o-prototypu', label: 'O prototypu a jeho omezeních' },
+            { to: '/pro-odborniky', label: 'Pro odborníky' },
+            { to: '/nalehava-pomoc', label: 'Naléhavá pomoc' },
+            { to: '/#faq', label: 'Časté otázky' },
+          ].map((l) => (
+            <li key={l.to}>
+              <Link to={l.to} className="flex min-h-14 items-center justify-between px-5 font-semibold hover:bg-sage-50">
+                {l.label}
+                <ChevronRight aria-hidden className="size-5 text-muted" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   );
 }

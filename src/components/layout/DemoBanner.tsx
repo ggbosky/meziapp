@@ -16,18 +16,14 @@ export function DemoBanner() {
   const ageDays = Math.floor((now().getTime() - Date.parse(snapshot.state.seededAt)) / DAY_MS);
   return (
     <>
-      <div className="bg-brand-950 text-[0.8rem] text-white/90">
-        <div className="container-page flex min-h-9 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 py-1.5 text-center">
-          <p className="inline-flex items-center gap-2">
-            <FlaskConical aria-hidden className="size-4 shrink-0 text-brand-300" />
-            <span>
-              <strong className="font-semibold text-white">Ukázkový režim</strong> · Fiktivní údaje · Nevkládej osobní ani zdravotní informace.
-            </span>
-          </p>
-          <Link to="/o-prototypu" className="font-medium text-brand-200 underline underline-offset-2 hover:text-white">
-            O prototypu
+      <div className="border-b border-amber-line/70 bg-sun-soft text-amber-ink">
+        <p className="container-page py-1.5 text-center text-[0.74rem] leading-snug sm:text-[0.8rem]">
+          <FlaskConical aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
+          <strong className="font-bold">Ukázkový režim</strong> · Fiktivní údaje · Nevkládej osobní ani zdravotní informace.{' '}
+          <Link to="/o-prototypu" className="font-semibold underline underline-offset-2">
+            Více
           </Link>
-        </div>
+        </p>
       </div>
       {snapshot.persistence !== 'ok' && (
         <div className="container-page pt-3">

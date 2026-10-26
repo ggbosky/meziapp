@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { BottomTabs, MobileTopBar, Sidebar } from './AppNav';
 import { DemoBanner } from './DemoBanner';
 import { Footer } from './Footer';
-import { Header } from './Header';
 
 /** Po změně stránky posune obsah nahoru a přesune focus na hlavní obsah. */
 function useRouteFocus() {
@@ -22,10 +22,14 @@ function useRouteFocus() {
   }, [location.pathname, location.hash]);
 }
 
+/**
+ * Kostra aplikace: na telefonu horní lišta a dolní karty, na počítači
+ * boční panel. Ukázkový režim je označený na každé obrazovce.
+ */
 export function AppShell() {
   useRouteFocus();
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)]">
       <a
         href="#main"
         onClick={(e) => {
@@ -36,12 +40,16 @@ export function AppShell() {
       >
         Přeskočit na obsah
       </a>
-      <DemoBanner />
-      <Header />
-      <main id="main" tabIndex={-1} className="flex-1 outline-none">
-        <Outlet />
-      </main>
-      <Footer />
+      <Sidebar />
+      <div className="flex min-h-dvh min-w-0 flex-col">
+        <DemoBanner />
+        <MobileTopBar />
+        <main id="main" tabIndex={-1} className="flex-1 pb-28 outline-none lg:pb-0">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
+      <BottomTabs />
     </div>
   );
 }

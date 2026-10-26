@@ -54,7 +54,7 @@ function ClientOverview() {
               <Card padded={false} className="overflow-hidden">
                 <div className="bg-brand-900 p-5 text-white sm:p-6">
                   <p className="text-sm text-brand-200">Naplánováno</p>
-                  <p className="mt-1 font-display text-2xl font-semibold first-letter:uppercase sm:text-3xl">
+                  <p className="mt-1 font-display text-2xl font-extrabold first-letter:uppercase sm:text-3xl">
                     {formatDateTime(next.appointment.startsAt, now)}
                   </p>
                   <p className="mt-1 flex items-center gap-2 text-sm text-white/80">
@@ -144,7 +144,7 @@ function ClientOverview() {
               Vybrat termín
             </ButtonLink>
           </Card>
-          <div className="flex gap-3 rounded-[var(--radius-card)] border border-line p-5 text-sm leading-relaxed text-muted">
+          <div className="flex gap-3 rounded-[var(--radius-card)] bg-sky-soft p-5 text-sm leading-relaxed text-muted">
             <Info aria-hidden className="mt-0.5 size-5 shrink-0 text-brand-700" />
             <p>Rezervace v ukázce jsou fiktivní a uložené jen v tomto prohlížeči. Žádný skutečný termín nevzniká.</p>
           </div>

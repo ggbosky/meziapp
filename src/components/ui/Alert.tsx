@@ -26,7 +26,7 @@ export function Alert({ tone = 'info', title, children, className, live = false,
   return (
     <div
       role={live ? (tone === 'error' ? 'alert' : 'status') : undefined}
-      className={cn('flex gap-3 rounded-2xl border px-4 py-3.5 text-sm leading-relaxed [&>svg]:mt-0.5 [&>svg]:size-5 [&>svg]:shrink-0', t.box, className)}
+      className={cn('flex gap-3 rounded-[18px] border px-4 py-3.5 text-[0.9rem] leading-relaxed [&>svg]:mt-0.5 [&>svg]:size-5 [&>svg]:shrink-0', t.box, className)}
     >
       {t.icon}
       <div className="min-w-0 flex-1">

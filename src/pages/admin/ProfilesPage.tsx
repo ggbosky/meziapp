@@ -40,7 +40,7 @@ export function ProfilesPage() {
       ) : (
         <ul className="space-y-3">
           {items.map(({ profile, upcomingOpenSlots, upcomingBookings }) => (
-            <li key={profile.id} className="rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-soft sm:p-5">
+            <li key={profile.id} className="rounded-[var(--radius-card)] bg-surface p-4 shadow-soft sm:p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   <Avatar name={profile.professionalName} tone={profile.avatarTone} size="sm" />

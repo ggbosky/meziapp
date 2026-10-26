@@ -7,11 +7,11 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subt
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors duration-150 select-none disabled:cursor-not-allowed disabled:opacity-55 [&_svg]:shrink-0';
+  'inline-flex items-center justify-center gap-2 rounded-[14px] font-semibold transition-[background-color,border-color,transform] duration-150 select-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 [&_svg]:shrink-0';
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-800 text-white hover:bg-brand-900 active:bg-brand-950 shadow-[0_1px_0_rgb(255_255_255/0.08)_inset]',
-  secondary: 'bg-surface text-brand-900 border border-line-strong hover:border-brand-700 hover:bg-sage-50',
+  primary: 'bg-brand-800 text-white hover:bg-brand-900 shadow-[0_6px_16px_-8px_rgb(34_100_74/0.6)]',
+  secondary: 'bg-surface text-brand-900 border-2 border-line hover:border-brand-300 hover:bg-sage-50',
   ghost: 'text-brand-800 hover:bg-sage-100',
   subtle: 'bg-sage-100 text-brand-900 hover:bg-brand-200/70',
   danger: 'bg-danger text-white hover:bg-danger-strong',
@@ -19,8 +19,8 @@ const variants: Record<ButtonVariant, string> = {
 
 const sizes: Record<ButtonSize, string> = {
   sm: 'min-h-10 px-4 text-sm',
-  md: 'min-h-11 px-5 text-[0.95rem]',
-  lg: 'min-h-12 px-6 text-base',
+  md: 'min-h-12 px-5 text-[0.95rem]',
+  lg: 'min-h-14 px-6 text-base',
 };
 
 export function buttonClasses(variant: ButtonVariant = 'primary', size: ButtonSize = 'md', className?: string) {

@@ -47,7 +47,7 @@ export function ApplicationsPage() {
         <ul className="space-y-2.5">
           {items.map((app) => (
             <li key={app.id}>
-              <Link to={`/admin/zadosti/${app.id}`} className="flex items-center gap-4 rounded-2xl border border-line bg-surface p-4 hover:border-brand-300 hover:bg-sage-50">
+              <Link to={`/admin/zadosti/${app.id}`} className="flex items-center gap-4 rounded-[20px] bg-surface p-4 shadow-soft hover:shadow-raised">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{app.professionalName || 'Bez jména'}</p>
                   <p className="text-sm text-muted">

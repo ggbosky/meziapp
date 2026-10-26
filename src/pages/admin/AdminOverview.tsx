@@ -14,13 +14,13 @@ import { AuditList } from './AuditList';
 
 function Metric({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint: string }) {
   return (
-    <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5 shadow-soft">
+    <div className="rounded-[var(--radius-card)] bg-surface p-5 shadow-soft">
       <dt className="flex items-center gap-2 text-sm text-muted [&_svg]:size-4 [&_svg]:text-brand-700">
         {icon}
         {label}
       </dt>
       <dd>
-        <span className="mt-2 block font-display text-4xl font-semibold tabular-nums text-ink">{value}</span>
+        <span className="mt-2 block font-display text-4xl font-extrabold tabular-nums text-ink">{value}</span>
         <span className="mt-1 block text-xs leading-relaxed text-muted">{hint}</span>
       </dd>
     </div>
@@ -76,7 +76,7 @@ export function AdminOverview() {
             <ul className="space-y-2.5">
               {pending.map((app) => (
                 <li key={app.id}>
-                  <Link to={`/admin/zadosti/${app.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 hover:border-brand-300 hover:bg-sage-50">
+                  <Link to={`/admin/zadosti/${app.id}`} className="flex items-center gap-3 rounded-[20px] bg-surface p-4 shadow-soft hover:shadow-raised">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">{app.professionalName}</p>
                       <p className="text-sm text-muted">

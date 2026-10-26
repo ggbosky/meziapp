@@ -39,7 +39,7 @@ export function RequireRole({ role, children, redirectTo }: { role: UserRole; ch
         <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-sage-100 text-brand-800">
           <Lock aria-hidden className="size-5" />
         </div>
-        <h1 className="font-display text-2xl font-semibold">{copy.title}</h1>
+        <h1 className="font-display text-2xl font-extrabold">{copy.title}</h1>
         <p className="mt-2 text-muted">
           {user ? `Teď jsi v demo účtu ${user.displayName}. ` : ''}
           {copy.text}

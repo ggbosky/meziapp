@@ -9,7 +9,7 @@ export function Stepper({ steps, current }: { steps: string[]; current: number }
         const active = index === current;
         return (
           <li key={label} className="min-w-0" aria-current={active ? 'step' : undefined}>
-            <div className={cn('h-1.5 rounded-full transition-colors', done || active ? 'bg-brand-700' : 'bg-line')} />
+            <div className={cn('h-2 rounded-full transition-colors', done ? 'bg-brand-700' : active ? 'bg-sun' : 'bg-line')} />
             <div className="mt-2 flex items-center gap-1.5">
               <span
                 className={cn(

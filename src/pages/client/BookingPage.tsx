@@ -17,7 +17,7 @@ import type { DomainError } from '../../domain/result';
 import { formatDayLong, formatTimeRange } from '../../domain/time';
 import type { AvailabilitySlot } from '../../domain/types';
 
-const STEPS = ['Termín', 'Rekapitulace', 'Potvrzení', 'Hotovo'];
+const STEPS = ['Termín', 'Souhrn', 'Potvrzení', 'Hotovo'];
 
 export function BookingPage() {
   return (
@@ -107,7 +107,7 @@ function BookingFlow() {
       </div>
 
       <Card className="mt-6 animate-enter" key={effectiveStep}>
-        <h1 ref={headingRef} tabIndex={-1} className="font-display text-2xl font-semibold outline-none sm:text-3xl">
+        <h1 ref={headingRef} tabIndex={-1} className="font-display text-2xl font-extrabold outline-none sm:text-3xl">
           {headings[effectiveStep]}
         </h1>
 
@@ -140,7 +140,7 @@ function BookingFlow() {
               >
                 <SlotPicker slots={slots} value={slot?.id ?? null} onChange={selectSlot} now={now} />
                 <div className="mt-6 flex justify-end">
-                  <Button type="submit" size="lg" disabled={!slot} icon={<ArrowRight aria-hidden className="size-5" />}>
+                  <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={!slot} icon={<ArrowRight aria-hidden className="size-5" />}>
                     Pokračovat
                   </Button>
                 </div>
@@ -157,7 +157,7 @@ function BookingFlow() {
               { icon: <Video aria-hidden />, label: 'Forma', value: 'Online videohovor' },
               { icon: <HandHeart aria-hidden />, label: 'Cena', value: 'Zdarma' },
             ].map((item) => (
-              <div key={item.label} className="flex items-start gap-3 rounded-2xl border border-line p-4">
+              <div key={item.label} className="flex items-start gap-3 rounded-2xl bg-canvas p-4">
                 <span className="text-brand-700 [&_svg]:size-5">{item.icon}</span>
                 <div>
                   <dt className="text-xs text-muted">{item.label}</dt>
@@ -202,7 +202,7 @@ function BookingFlow() {
               Potvrzením se rezervace uloží jen do tohoto prohlížeče. Žádný skutečný termín nevznikne, nikomu se nic neodešle a konzultace
               se neuskuteční.
             </Alert>
-            <div className="space-y-3 rounded-2xl border border-line p-4">
+            <div className="space-y-3 rounded-2xl bg-canvas p-4">
               <Checkbox checked={adult} onChange={setAdult} label={`Je mi alespoň ${appConfig.minimumAge} let.`} />
               <Checkbox
                 checked={understands}

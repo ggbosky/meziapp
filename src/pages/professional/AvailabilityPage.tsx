@@ -114,7 +114,7 @@ function SlotList({ items, now, onWithdraw, onCancelBooked }: { items: OwnSlotVi
   return (
     <ul className="space-y-2.5">
       {items.map((view) => (
-        <li key={view.slot.id} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
+        <li key={view.slot.id} className="flex flex-col gap-3 rounded-[20px] bg-surface p-4 shadow-soft sm:flex-row sm:items-center">
           <div className="flex min-w-0 flex-1 items-center gap-4">
             <DateBlock iso={view.slot.startsAt} muted={view.state === 'withdrawn' || view.state === 'past'} />
             <div className="min-w-0">

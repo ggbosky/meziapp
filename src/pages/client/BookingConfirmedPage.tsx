@@ -1,4 +1,5 @@
-import { CalendarX2, CircleCheck } from 'lucide-react';
+import { CalendarX2 } from 'lucide-react';
+import { CelebrateIllustration } from '../../components/ui/Illustrations';
 import { useParams } from 'react-router-dom';
 import { useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
 import { RequireRole } from '../../components/layout/RequireRole';
@@ -37,14 +38,12 @@ function Confirmed() {
 
   return (
     <div className="container-page max-w-2xl py-8 sm:py-12">
-      <Stepper steps={['Termín', 'Rekapitulace', 'Potvrzení', 'Hotovo']} current={3} />
+      <Stepper steps={['Termín', 'Souhrn', 'Potvrzení', 'Hotovo']} current={3} />
       <Card className="mt-6 animate-enter text-center">
-        <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-sage-100 text-brand-800">
-          <CircleCheck aria-hidden className="size-8" />
-        </div>
-        <h1 className="mt-5 font-display text-3xl font-semibold">Termín je zarezervovaný</h1>
+        <CelebrateIllustration className="mx-auto w-44" />
+        <h1 className="mt-3 font-display text-3xl font-extrabold">Termín je zarezervovaný</h1>
         <p className="mt-2 text-muted">V ukázkovém režimu. Rezervace je uložená jen v tomto prohlížeči.</p>
-        <div className="mx-auto mt-6 max-w-md rounded-2xl bg-canvas p-5 text-left">
+        <div className="mx-auto mt-6 max-w-md rounded-2xl bg-sage-100 p-5 text-left">
           <p className="text-sm text-muted">Konzultace s odborníkem</p>
           <p className="font-semibold">{profile.professionalName}</p>
           <p className="mt-3 text-sm text-muted">Kdy</p>

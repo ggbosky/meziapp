@@ -15,13 +15,13 @@ import { ProfileNotices } from './ProfileNotices';
 
 function Stat({ icon, label, value, hint }: { icon: ReactNode; label: string; value: number; hint: string }) {
   return (
-    <Card className="p-5 sm:p-5">
-      <div className="flex items-center gap-2 text-sm text-muted [&_svg]:size-4 [&_svg]:text-brand-700">
+    <Card className="p-3.5 sm:p-5">
+      <div className="flex items-start gap-2 text-xs font-semibold leading-tight text-muted sm:text-sm [&_svg]:hidden [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-brand-700 sm:[&_svg]:block">
         {icon}
         {label}
       </div>
-      <p className="mt-2 font-display text-4xl font-semibold tabular-nums text-ink">{value}</p>
-      <p className="mt-1 text-xs text-muted">{hint}</p>
+      <p className="mt-2 font-display text-3xl font-extrabold tabular-nums text-ink sm:text-4xl">{value}</p>
+      <p className="mt-1 text-[0.7rem] leading-tight text-muted sm:text-xs">{hint}</p>
     </Card>
   );
 }
@@ -54,7 +54,7 @@ export function ProDashboard() {
       />
       <ProfileNotices profile={profile} />
 
-      <section aria-label="Počty termínů" className="grid gap-3 sm:grid-cols-3">
+      <section aria-label="Počty termínů" className="grid grid-cols-3 gap-2.5 sm:gap-3">
         <Stat icon={<CalendarClock aria-hidden />} label="Volné termíny" value={in14.filter((v) => v.state === 'open').length} hint="v příštích 14 dnech" />
         <Stat icon={<CalendarCheck aria-hidden />} label="Rezervované termíny" value={in14.filter((v) => v.state === 'booked').length} hint="v příštích 14 dnech" />
         <Stat icon={<CircleCheck aria-hidden />} label="Proběhlé konzultace" value={practice.filter((v) => v.status === 'completed').length} hint="celkem v demo datech" />
@@ -65,7 +65,7 @@ export function ProDashboard() {
         {next ? (
           <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-display text-2xl font-semibold first-letter:uppercase">{formatDateTime(next.appointment.startsAt, now)}</p>
+              <p className="font-display text-2xl font-extrabold first-letter:uppercase">{formatDateTime(next.appointment.startsAt, now)}</p>
               <p className="mt-1 flex items-center gap-2 text-sm text-muted">
                 <Clock aria-hidden className="size-4" />
                 {formatTimeRange(next.appointment.startsAt, next.appointment.durationMinutes)} · klient {next.clientLabel}

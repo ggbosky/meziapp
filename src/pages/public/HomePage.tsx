@@ -1,23 +1,45 @@
 import {
   ArrowRight,
-  CalendarCheck,
+  BatteryLow,
+  ChevronDown,
   CircleSlash,
-  Clock,
+  Flower2,
+  GraduationCap,
   HandHeart,
+  HeartHandshake,
   Hourglass,
+  MessageCircleHeart,
   Search,
   ShieldCheck,
+  Signpost,
   Siren,
-  Video,
+  Sprout,
+  Wind,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
+import { useCurrentUser, useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
 import { usePageTitle } from '../../components/layout/usePageTitle';
 import { Avatar } from '../../components/ui/Avatar';
 import { ButtonLink } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
+import { cn } from '../../components/ui/cn';
+import { HeroIllustration, TimeIllustration } from '../../components/ui/Illustrations';
 import { appConfig } from '../../config/app';
-import { formatDateTime } from '../../domain/time';
+import { SPECIALIZATIONS } from '../../domain/catalog';
+import { atTime, formatDateTime, formatRelativeDay, formatTimeRange } from '../../domain/time';
+import type { SpecializationId } from '../../domain/types';
+
+const TOPIC_ICONS: Record<SpecializationId, ReactNode> = {
+  anxiety: <Wind aria-hidden />,
+  relationships: <HeartHandshake aria-hidden />,
+  grief: <Flower2 aria-hidden />,
+  burnout: <BatteryLow aria-hidden />,
+  life_changes: <Signpost aria-hidden />,
+  self_esteem: <Sprout aria-hidden />,
+  loneliness: <MessageCircleHeart aria-hidden />,
+  young_adults: <GraduationCap aria-hidden />,
+};
+const TILE_TONES = ['bg-sage-100', 'bg-sun-soft', 'bg-peach-soft', 'bg-sky-soft'];
 
 const FAQ = [
   {
@@ -38,11 +60,11 @@ const FAQ = [
   },
   {
     q: 'Můžu rezervaci zrušit?',
-    a: 'Ano, budoucí rezervaci můžeš zrušit ve svém přehledu. Termín se tím uvolní pro někoho dalšího.',
+    a: 'Ano, budoucí rezervaci můžeš zrušit v přehledu svých termínů. Termín se tím uvolní pro někoho dalšího.',
   },
   {
     q: 'Je to krizová pomoc?',
-    a: 'Ne. Služba není určená pro akutní situace a nikdo tu průběžně nesleduje zprávy. Při ohrožení života volej 112.',
+    a: `Ne. Služba není určená pro akutní situace a nikdo tu průběžně nesleduje zprávy. Při ohrožení života volej ${appConfig.urgentHelp.emergencyNumber}.`,
   },
   {
     q: 'Pro koho je služba určená?',
@@ -54,244 +76,245 @@ const FAQ = [
   },
 ];
 
-function UpcomingPreview() {
+function SectionHead({ id, title, action }: { id: string; title: string; action?: ReactNode }) {
+  return (
+    <div className="mb-3.5 flex items-end justify-between gap-3">
+      <h2 id={id} className="text-xl font-extrabold text-ink sm:text-2xl">
+        {title}
+      </h2>
+      {action}
+    </div>
+  );
+}
+
+function NextBooking() {
+  const user = useCurrentUser();
+  const { appointments } = useServices();
+  const now = useNow();
+  if (user?.role !== 'client') return null;
+  const next = appointments.listMine().find((v) => v.status === 'booked');
+  if (!next) return null;
+  return (
+    <section aria-labelledby="next-title">
+      <SectionHead id="next-title" title="Tvoje příští konzultace" />
+      <Link
+        to={`/klient/rezervace/${next.appointment.id}`}
+        className="flex items-center gap-4 rounded-[var(--radius-card)] bg-brand-800 p-4 text-white shadow-raised sm:p-5"
+      >
+        <Avatar name={next.profile.professionalName} tone={next.profile.avatarTone} size="sm" />
+        <span className="min-w-0 flex-1">
+          <span className="block font-round text-lg font-extrabold first-letter:uppercase">{formatDateTime(next.appointment.startsAt, now)}</span>
+          <span className="block truncate text-sm text-white/80">
+            {next.profile.professionalName} · {formatTimeRange(next.appointment.startsAt, next.appointment.durationMinutes)}
+          </span>
+        </span>
+        <ArrowRight aria-hidden className="size-5 shrink-0" />
+      </Link>
+    </section>
+  );
+}
+
+function SoonSlots() {
   const { profiles } = useServices();
-  useDemoSnapshot();
   const now = useNow();
   const items = profiles
     .listPublic({ sort: 'soonest' })
     .filter((s) => s.nextSlot)
-    .slice(0, 3);
+    .slice(0, 4);
   return (
-    <Card className="relative p-5 sm:p-6" aria-labelledby="preview-title">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 id="preview-title" className="text-sm font-semibold text-ink">
-          Nejbližší volné termíny
-        </h2>
-        <span className="rounded-full bg-sage-100 px-2.5 py-0.5 text-xs font-medium text-brand-900">Zdarma</span>
-      </div>
+    <section aria-labelledby="soon-title">
+      <SectionHead
+        id="soon-title"
+        title="Volné termíny brzy"
+        action={
+          <Link to="/psychologove" className="link shrink-0 text-sm">
+            Všichni psychologové
+          </Link>
+        }
+      />
       {items.length === 0 ? (
-        <p className="rounded-2xl bg-canvas p-4 text-sm text-muted">Teď nejsou vypsané volné termíny.</p>
+        <p className="rounded-[var(--radius-card)] bg-surface p-5 text-muted shadow-soft">Teď nejsou vypsané volné termíny.</p>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 xl:grid-cols-4">
           {items.map(({ profile, nextSlot }) => (
-            <li key={profile.id}>
+            <li key={profile.id} className="w-[15.5rem] shrink-0 snap-start sm:w-auto">
               <Link
                 to={`/psychologove/${profile.id}`}
-                className="flex items-center gap-3 rounded-2xl border border-line bg-canvas/60 p-3 transition-colors hover:border-brand-300 hover:bg-sage-50"
+                className="flex h-full flex-col rounded-[var(--radius-card)] bg-surface p-4 shadow-soft transition-shadow hover:shadow-raised"
               >
-                <Avatar name={profile.professionalName} tone={profile.avatarTone} size="sm" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-ink">{profile.professionalName}</span>
-                  <span className="block truncate text-xs text-muted first-letter:uppercase">
-                    {nextSlot ? formatDateTime(nextSlot.startsAt, now) : ''} · {nextSlot?.durationMinutes} min
+                <span className="flex items-center gap-3">
+                  <Avatar name={profile.professionalName} tone={profile.avatarTone} size="sm" />
+                  <span className="min-w-0">
+                    <span className="block truncate font-bold">{profile.professionalName}</span>
+                    <span className="block truncate text-sm text-muted">{profile.professionalRole}</span>
                   </span>
                 </span>
-                <ArrowRight aria-hidden className="size-4 shrink-0 text-brand-700" />
+                <span className="mt-4 inline-flex w-fit rounded-full bg-sage-100 px-3 py-1 text-sm font-bold text-brand-800 first-letter:uppercase">
+                  {nextSlot ? `${formatRelativeDay(nextSlot.startsAt, now)} ${atTime(nextSlot.startsAt)}` : ''}
+                </span>
               </Link>
             </li>
           ))}
         </ul>
       )}
-      <p className="mt-4 text-xs leading-relaxed text-muted">Fiktivní odborníci a termíny z ukázkových dat.</p>
-    </Card>
+      <p className="mt-2 text-xs text-muted">Fiktivní odborníci a termíny z ukázkových dat.</p>
+    </section>
   );
 }
 
 export function HomePage() {
   usePageTitle(null);
+  useDemoSnapshot();
   return (
-    <>
-      {/* Úvod */}
-      <section className="relative overflow-hidden">
-        <div aria-hidden className="pointer-events-none absolute -right-40 -top-40 size-[34rem] rounded-full bg-sage-100/80" />
-        <div aria-hidden className="pointer-events-none absolute -right-8 top-48 size-64 rounded-full border-[28px] border-sage-100/70" />
-        <div className="container-page relative grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:py-24">
-          <div className="animate-enter">
-            <p className="mb-5 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-muted">
-              <span className="font-medium text-brand-800">Bezplatné konzultace</span>
-              <span aria-hidden>·</span>
-              <span>pro lidi od {appConfig.minimumAge} let</span>
-            </p>
-            <h1 className="font-display text-[2.6rem] font-semibold leading-[1.08] text-ink sm:text-6xl">{appConfig.tagline}</h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
-              Propojujeme dospělé, kteří hledají podporu, s psychology, kteří nabízejí část svého času zdarma. Nemusíš mít všechno předem
-              pojmenované.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink to="/psychologove" size="lg" icon={<Search aria-hidden className="size-5" />}>
-                Prohlédnout psychology
-              </ButtonLink>
-              <ButtonLink to="/pro-odborniky" size="lg" variant="secondary" icon={<HandHeart aria-hidden className="size-5" />}>
-                Chci nabídnout svůj čas
-              </ButtonLink>
-            </div>
-            <p className="mt-6 flex items-start gap-2 text-sm text-muted">
-              <Siren aria-hidden className="mt-0.5 size-4 shrink-0 text-danger" />
+    <div className="container-page space-y-10 py-5 sm:py-8">
+      <section className="animate-enter overflow-hidden rounded-[28px] bg-sage-100 md:grid md:grid-cols-[1.1fr_1fr] md:items-end">
+        <div className="p-6 pb-2 sm:p-9 sm:pb-9">
+          <p className="inline-flex flex-wrap items-center gap-x-1.5 rounded-full bg-surface px-3 py-1 text-sm font-semibold text-brand-800">
+            Konzultace zdarma <span aria-hidden className="text-muted">·</span> <span className="font-medium text-muted">od {appConfig.minimumAge} let</span>
+          </p>
+          <h1 className="mt-4 font-display text-[2.2rem] font-extrabold leading-[1.08] text-brand-950 sm:text-5xl">{appConfig.tagline}</h1>
+          <p className="mt-4 max-w-md text-[1.05rem] leading-relaxed text-ink/80">
+            Psychologové tu nabízejí část svého času zdarma. Vyber si termín bezplatné konzultace. Nemusíš mít všechno předem pojmenované.
+          </p>
+          <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+            <ButtonLink to="/psychologove" size="lg" icon={<Search aria-hidden className="size-5" />}>
+              Prohlédnout psychology
+            </ButtonLink>
+            <ButtonLink to="/pro-odborniky" size="lg" variant="secondary" icon={<HandHeart aria-hidden className="size-5" />}>
+              Chci nabídnout svůj čas
+            </ButtonLink>
+          </div>
+        </div>
+        <HeroIllustration className="mt-2 md:mt-0" />
+      </section>
+
+      <Link
+        to="/nalehava-pomoc"
+        className="-mt-4 flex items-center gap-3 rounded-[18px] bg-danger-soft px-4 py-3 text-sm text-danger-strong"
+      >
+        <Siren aria-hidden className="size-5 shrink-0" />
+        <span className="flex-1">
+          <strong className="font-bold">Nejde o akutní pomoc.</strong> Při ohrožení života volej {appConfig.urgentHelp.emergencyNumber}.
+        </span>
+        <ArrowRight aria-hidden className="size-4 shrink-0" />
+      </Link>
+
+      <NextBooking />
+
+      <section aria-labelledby="topics-title">
+        <SectionHead id="topics-title" title="S čím ti můžeme pomoct?" />
+        <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          {SPECIALIZATIONS.map((s, i) => (
+            <li key={s.id}>
+              <Link
+                to={`/psychologove?zamereni=${s.id}`}
+                className={cn(
+                  'flex h-full min-h-[6.5rem] flex-col justify-between gap-3 rounded-[20px] p-4 font-bold leading-snug text-ink transition-transform active:scale-[0.98]',
+                  TILE_TONES[i % TILE_TONES.length],
+                )}
+              >
+                <span className="flex size-10 items-center justify-center rounded-full bg-white/80 text-brand-800 [&_svg]:size-5">{TOPIC_ICONS[s.id]}</span>
+                {s.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2.5 text-sm text-muted">Nevíš, kam to zařadit? To je v pořádku. Můžeš si vybrat kohokoli.</p>
+      </section>
+
+      <SoonSlots />
+
+      <section aria-labelledby="steps-title">
+        <SectionHead id="steps-title" title="Jak to funguje" />
+        <ol className="grid gap-4 rounded-[var(--radius-card)] bg-surface p-5 shadow-soft sm:grid-cols-3 sm:p-6">
+          {[
+            { title: 'Vyber si odborníka', text: 'Podle zaměření, jazyka nebo nejbližšího volného termínu.' },
+            { title: 'Rezervuj termín', text: 'Bez diagnózy, doporučení a popisování potíží.' },
+            { title: 'Konzultace online', text: '30 nebo 50 minut přes videohovor, zdarma.' },
+          ].map((step, i) => (
+            <li key={step.title} className="flex gap-3.5">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sun font-round text-lg font-extrabold text-ink">{i + 1}</span>
               <span>
-                Nejde o akutní pomoc. Při ohrožení života volej {appConfig.urgentHelp.emergencyNumber}.{' '}
-                <Link to="/nalehava-pomoc" className="link">
-                  Naléhavá pomoc
-                </Link>
+                <span className="block font-bold">{step.title}</span>
+                <span className="mt-0.5 block text-sm leading-relaxed text-muted">{step.text}</span>
               </span>
-            </p>
-          </div>
-          <div className="animate-enter [animation-delay:80ms]">
-            <UpcomingPreview />
-          </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section aria-labelledby="fair-title">
+        <SectionHead id="fair-title" title="Zdarma a za stejných podmínek" />
+        <ul className="grid gap-x-6 gap-y-5 rounded-[var(--radius-card)] bg-surface p-5 shadow-soft sm:grid-cols-2 sm:p-6">
+          {[
+            { icon: <HandHeart aria-hidden />, title: 'Vždy zdarma', text: 'Žádné předplatné, prémiové účty, kredity ani reklamy.' },
+            {
+              icon: <CircleSlash aria-hidden />,
+              title: 'Bez placeného předbíhání',
+              text: 'Termíny jsou dostupné všem stejně. Najednou můžeš mít nejvýš dvě naplánované konzultace.',
+            },
+            {
+              icon: <Hourglass aria-hidden />,
+              title: 'Omezená kapacita',
+              text: 'Volné termíny se mohou rychle obsadit a někdy nebudou žádné. Neslibujeme okamžitou dostupnost.',
+            },
+            { icon: <ShieldCheck aria-hidden />, title: 'Ručně schválení odborníci', text: 'Každou přihlášku posoudí člověk. V prototypu je schvalování simulované.' },
+          ].map((item) => (
+            <li key={item.title} className="flex gap-3.5">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-sage-100 text-brand-800 [&_svg]:size-5">{item.icon}</span>
+              <span>
+                <span className="block font-bold">{item.title}</span>
+                <span className="mt-0.5 block text-sm leading-relaxed text-muted">{item.text}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 rounded-[var(--radius-card)] bg-amber-soft p-5 text-sm leading-relaxed text-ink/85">
+          <p className="font-bold text-amber-ink">Co služba není</p>
+          <p className="mt-1">
+            Není to akutní ani krizová pomoc a zprávy tu nikdo průběžně nesleduje. Neslibujeme léčbu ani konkrétní výsledek a nejsme dostupní
+            nepřetržitě.
+          </p>
         </div>
       </section>
 
-      {/* Jak to funguje */}
-      <section aria-labelledby="steps-title" className="border-y border-line bg-surface py-16 sm:py-20">
-        <div className="container-page">
-          <h2 id="steps-title" className="font-display text-3xl font-semibold sm:text-4xl">
-            Jak to funguje
+      <section aria-labelledby="pros-title" className="overflow-hidden rounded-[28px] bg-brand-900 text-white sm:grid sm:grid-cols-[1.4fr_1fr] sm:items-center">
+        <div className="p-6 sm:p-9">
+          <h2 id="pros-title" className="text-2xl font-extrabold leading-tight sm:text-3xl">
+            Jsi psycholog nebo psycholožka?
           </h2>
-          <p className="mt-3 max-w-2xl text-muted">Tři kroky. Bez poplatků a bez vyplňování dotazníků o tom, co řešíš.</p>
-          <ol className="mt-10 grid gap-6 md:grid-cols-3">
-            {[
-              {
-                icon: <Search aria-hidden />,
-                title: 'Vyber si odborníka',
-                text: 'Projdi profily psychologů a filtruj podle zaměření, jazyka nebo nejbližšího volného termínu.',
-              },
-              {
-                icon: <CalendarCheck aria-hidden />,
-                title: 'Rezervuj termín',
-                text: 'Vyber si termín bezplatné konzultace a potvrď ho. Nepotřebuješ diagnózu ani popis potíží.',
-              },
-              {
-                icon: <Video aria-hidden />,
-                title: 'Konzultace online',
-                text: 'Ve smluvený čas se připojíš k videohovoru. Konzultace trvá 30 nebo 50 minut.',
-              },
-            ].map((step, i) => (
-              <li key={step.title} className="relative rounded-[var(--radius-card)] bg-canvas p-6">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-11 items-center justify-center rounded-full bg-brand-800 text-white [&_svg]:size-5">{step.icon}</span>
-                  <span className="font-display text-sm font-semibold text-brand-700">Krok {i + 1}</span>
-                </div>
-                <h3 className="mt-5 text-lg font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{step.text}</p>
-              </li>
-            ))}
-          </ol>
+          <p className="mt-3 max-w-md leading-relaxed text-white/80">
+            Nabídni pár bezplatných konzultací měsíčně. Termíny i jejich počet si určuješ sám nebo sama a příjem rezervací můžeš kdykoli
+            pozastavit.
+          </p>
+          <ButtonLink to="/pro-odborniky" variant="secondary" size="lg" className="mt-6 border-transparent">
+            Chci nabídnout svůj čas
+          </ButtonLink>
+        </div>
+        <TimeIllustration className="mx-auto max-w-[15rem] px-6 pb-6 sm:max-w-none sm:pb-0" />
+      </section>
+
+      <section id="faq" aria-labelledby="faq-title" className="scroll-mt-20">
+        <SectionHead id="faq-title" title="Časté otázky" />
+        <div className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] bg-surface shadow-soft">
+          {FAQ.map((item) => (
+            <details key={item.q} className="group">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-3.5 font-bold text-ink hover:bg-sage-50 [&::-webkit-details-marker]:hidden">
+                {item.q}
+                <ChevronDown aria-hidden className="size-5 shrink-0 text-muted transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="px-5 pb-5 text-[0.95rem] leading-relaxed text-muted">{item.a}</p>
+            </details>
+          ))}
         </div>
       </section>
 
-      {/* Principy */}
-      <section aria-labelledby="principles-title" className="py-16 sm:py-20">
-        <div className="container-page grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-          <div>
-            <h2 id="principles-title" className="font-display text-3xl font-semibold sm:text-4xl">
-              Zdarma a za stejných podmínek pro všechny
-            </h2>
-            <p className="mt-4 leading-relaxed text-muted">
-              Služba stojí na čase, který odborníci dobrovolně nabízejí. Proto je kapacita omezená a proto ji nechceme nikomu prodávat.
-            </p>
-          </div>
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {[
-              { icon: <HandHeart aria-hidden />, title: 'Vždy zdarma', text: 'Žádné předplatné, prémiové účty, kredity ani reklamy.' },
-              {
-                icon: <CircleSlash aria-hidden />,
-                title: 'Bez placeného předbíhání',
-                text: 'Termíny jsou dostupné všem stejně. Najednou můžeš mít nejvýš dvě naplánované konzultace.',
-              },
-              {
-                icon: <Hourglass aria-hidden />,
-                title: 'Omezená kapacita',
-                text: 'Volné termíny se mohou rychle obsadit a někdy nebudou žádné. Neslibujeme okamžitou dostupnost.',
-              },
-              {
-                icon: <ShieldCheck aria-hidden />,
-                title: 'Ručně schválení odborníci',
-                text: 'Každou přihlášku posoudí člověk. V prototypu je schvalování simulované.',
-              },
-            ].map((item) => (
-              <li key={item.title} className="rounded-[var(--radius-card)] border border-line bg-surface p-5 shadow-soft">
-                <span className="flex size-10 items-center justify-center rounded-full bg-sage-100 text-brand-800 [&_svg]:size-5">{item.icon}</span>
-                <h3 className="mt-4 font-semibold">{item.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.text}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="container-page mt-10">
-          <div className="rounded-[var(--radius-card)] border border-amber-line bg-amber-soft p-5 sm:p-6">
-            <h3 className="flex items-center gap-2 font-semibold text-amber-ink">
-              <Clock aria-hidden className="size-5" />
-              Co služba není
-            </h3>
-            <ul className="mt-3 grid gap-2 text-sm leading-relaxed text-ink/85 sm:grid-cols-3">
-              <li>Není to akutní ani krizová pomoc. Zprávy tu nikdo průběžně nesleduje.</li>
-              <li>Neslibujeme léčbu ani konkrétní výsledek. Konzultace je prostor pro rozhovor.</li>
-              <li>Nejsme dostupní nepřetržitě. Termíny závisejí na volném čase odborníků.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* Pro odborníky */}
-      <section aria-labelledby="pros-title" className="pb-16 sm:pb-20">
-        <div className="container-page">
-          <div className="grid gap-8 overflow-hidden rounded-[24px] bg-brand-900 p-7 text-white sm:p-10 lg:grid-cols-[1.2fr_1fr] lg:items-center">
-            <div>
-              <h2 id="pros-title" className="font-display text-3xl font-semibold">
-                Jsi psycholog nebo psycholožka a máš trochu volného času?
-              </h2>
-              <p className="mt-4 max-w-xl leading-relaxed text-white/80">
-                Můžeš nabídnout několik bezplatných konzultací měsíčně. Sám nebo sama si určuješ termíny i jejich počet a příjem nových
-                rezervací můžeš kdykoli pozastavit.
-              </p>
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <ButtonLink to="/pro-odborniky" variant="secondary" size="lg">
-                  Chci nabídnout svůj čas
-                </ButtonLink>
-              </div>
-            </div>
-            <ol className="space-y-3 text-sm">
-              {['Vyplníš krátkou přihlášku', 'Provozní tým ji ručně posoudí', 'Vypíšeš termíny, které ti vyhovují'].map((t, i) => (
-                <li key={t} className="flex items-center gap-3 rounded-2xl bg-white/8 p-4 ring-1 ring-white/10">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-300 font-semibold text-brand-950">{i + 1}</span>
-                  {t}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" aria-labelledby="faq-title" className="scroll-mt-24">
-        <div className="container-page grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-          <div>
-            <h2 id="faq-title" className="font-display text-3xl font-semibold sm:text-4xl">
-              Časté otázky
-            </h2>
-            <p className="mt-4 text-muted">
-              Něco tu chybí? Napiš nám na {appConfig.contactEmail} (v prototypu fiktivní adresa).
-            </p>
-          </div>
-          <div className="divide-y divide-line rounded-[var(--radius-card)] border border-line bg-surface">
-            {FAQ.map((item) => (
-              <details key={item.q} className="group px-5 sm:px-6">
-                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium text-ink [&::-webkit-details-marker]:hidden">
-                  {item.q}
-                  <span
-                    aria-hidden
-                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-sage-100 text-brand-800 transition-transform group-open:rotate-45"
-                  >
-                    +
-                  </span>
-                </summary>
-                <p className="pb-5 text-sm leading-relaxed text-muted">{item.a}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-    </>
+      <p className="pb-2 text-center text-xs leading-relaxed text-muted lg:hidden">
+        Demonstrační prototyp. Všechny osoby, termíny a rezervace jsou fiktivní.{' '}
+        <Link to="/o-prototypu" className="underline">
+          O prototypu
+        </Link>
+      </p>
+    </div>
   );
 }

@@ -27,10 +27,12 @@ describe('průchody aplikací', () => {
   it('seznam psychologů lze filtrovat a filtry vymazat', async () => {
     const { user } = renderApp('/psychologove');
     expect(screen.getAllByRole('article')).toHaveLength(5);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Jazyk konzultace' }), 'uk');
+    await user.click(screen.getByRole('button', { name: 'Další filtry' }));
+    await user.selectOptions(within(screen.getByRole('dialog')).getByRole('combobox', { name: 'Jazyk konzultace' }), 'uk');
+    await user.keyboard('{Escape}');
     expect(screen.getAllByRole('article')).toHaveLength(1);
     expect(screen.getByRole('link', { name: 'Marta Šťastná' })).toBeInTheDocument();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Zaměření' }), 'grief');
+    await user.click(screen.getByRole('button', { name: 'Ztráta a truchlení' }));
     expect(screen.getByText('Těmto filtrům teď nikdo neodpovídá')).toBeInTheDocument();
     await user.click(screen.getAllByRole('button', { name: 'Vymazat filtry' })[0]!);
     expect(screen.getAllByRole('article')).toHaveLength(5);

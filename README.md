@@ -8,7 +8,7 @@ Principy služby: všechny konzultace jsou zdarma, bez předplatného, kreditů,
 
 ## Technologie
 
-React 19, TypeScript (strict), Vite, Tailwind CSS 4, React Router (HashRouter), ikony Lucide, Vitest a Testing Library. Písma Inter a Source Serif 4 jsou self-hostovaná přes Fontsource, takže se nic nenačítá z cizích serverů.
+React 19, TypeScript (strict), Vite, Tailwind CSS 4, React Router (HashRouter), ikony Lucide, Vitest a Testing Library. Písma Nunito (nadpisy) a Figtree (text) jsou self-hostovaná přes Fontsource, takže se nic nenačítá z cizích serverů. Rozhraní je navržené primárně pro telefon: dolní lišta s kartami podle role, na počítači boční panel. Ilustrace jsou vlastní SVG v `src/components/ui/Illustrations.tsx`.
 
 Název aplikace se mění na jednom místě: `src/config/app.ts` (`appConfig.name`). Tamtéž jsou texty, pravidla rezervací a místo pro ověřené krizové kontakty.
 

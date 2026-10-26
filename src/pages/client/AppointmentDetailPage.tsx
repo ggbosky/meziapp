@@ -78,7 +78,7 @@ function AppointmentDetailContent({ view }: { view: ClientAppointmentView }) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <AppointmentStatusBadge status={status} />
-            <h1 className="mt-3 font-display text-2xl font-semibold first-letter:uppercase sm:text-3xl">{formatDateTime(appointment.startsAt, now)}</h1>
+            <h1 className="mt-3 font-display text-2xl font-extrabold first-letter:uppercase sm:text-3xl">{formatDateTime(appointment.startsAt, now)}</h1>
           </div>
         </div>
         <div className="mt-5 flex items-center gap-3 rounded-2xl bg-canvas p-3">
