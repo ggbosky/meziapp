@@ -1,0 +1,56 @@
+name: Nasazení na GitHub Pages
+
+# Spouští se jen ručně (Actions → Nasazení na GitHub Pages → Run workflow),
+# aby se nic nepublikovalo bez výslovného rozhodnutí. Automatické nasazení
+# po každém pushi do main zapneš odkomentováním bloku „push“.
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Určení base cesty
+        id: base
+        # Projektový repozitář běží na https://<účet>.github.io/<repozitář>/,
+        # uživatelský repozitář <účet>.github.io běží v kořeni domény.
+        run: |
+          REPO="${GITHUB_REPOSITORY#*/}"
+          if [[ "$REPO" == *.github.io ]]; then echo "path=/" >> "$GITHUB_OUTPUT"; else echo "path=/$REPO/" >> "$GITHUB_OUTPUT"; fi
+      - name: Build
+        run: npm run build
+        env:
+          BASE_PATH: ${{ steps.base.outputs.path }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
