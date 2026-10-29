@@ -80,6 +80,19 @@ Vstup do demo účtů je nástroj prototypu, ne přihlášení. Simulovaná opr�
 - **Obnovit demo** (v patičce, na stránce *Vyzkoušet aplikaci* a *O prototypu*) po potvrzení smaže změny a vygeneruje data znovu od dnešního dne. Pokud jsou data starší než 7 dní, aplikace obnovení sama nabídne.
 - Časy se ukládají jednoznačně v UTC (ISO 8601 s `Z`) a zobrazují se v českém formátu v pásmu Europe/Prague bez ohledu na pásmo prohlížeče.
 
+## Nasazení na Vercel
+
+Aplikace běží na Vercelu (projekt napojený na tento repozitář). Nastavení je v `vercel.json`: framework Vite, build `npm run build`, výstup `dist`, dlouhé cachování neměnných souborů v `assets/` a bezpečnostní hlavičky. Aplikace nepotřebuje žádné proměnné prostředí ani serverové funkce; každý push do napojené větve se nasadí automaticky.
+
+## Odolnost proti prázdné stránce
+
+- `index.html` obsahuje kostru aplikace, která je vidět okamžitě, ještě než se stáhne JavaScript.
+- Hlídač startu v `index.html` ukáže srozumitelnou zprávu s tlačítkem „Načíst znovu“, když se skript nepodaří načíst nebo se aplikace do 12 sekund nespustí. Velmi staré prohlížeče bez podpory modulů dostanou výzvu k aktualizaci.
+- Build cílí i na starší prohlížeče (Safari 14, Chrome 87, Firefox 78), aby se aplikace na starších iPhonech nespustila jako prázdná stránka.
+- Chyby při vykreslování zachytí `ErrorBoundary` (obdoba `error.js`): pro celou aplikaci a zvlášť pro obsah stránky, takže navigace zůstane funkční. Chybová obrazovka nabízí zkusit znovu nebo obnovit demo data.
+- Sekce pro odborníky a administraci se načítají až při otevření (`React.lazy`) a mezitím se zobrazí kostra stránky (obdoba `loading.js`).
+- Proč ne SSR nebo Server Components: všechna data prototypu žijí v prohlížeči (localStorage) a stránky jsou záměrně `noindex`, takže vykreslování na serveru by nic nezrychlilo ani nezlepšilo SEO. Pro ostrý provoz s backendem dává smysl přejít na Next.js a veřejné stránky (úvod, seznam a profily psychologů) vykreslovat na serveru.
+
 ## Nasazení na GitHub Pages
 
 Repozitář obsahuje dva workflow:

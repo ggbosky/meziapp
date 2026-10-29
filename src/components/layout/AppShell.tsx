@@ -1,5 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { ErrorBoundary } from '../feedback/ErrorBoundary';
+import { ErrorScreen } from '../feedback/ErrorScreen';
+import { PageSkeleton } from '../feedback/PageSkeleton';
 import { BottomTabs, MobileTopBar, Sidebar } from './AppNav';
 import { DemoBanner } from './DemoBanner';
 import { Footer } from './Footer';
@@ -28,6 +31,7 @@ function useRouteFocus() {
  */
 export function AppShell() {
   useRouteFocus();
+  const location = useLocation();
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)]">
       <a
@@ -45,7 +49,11 @@ export function AppShell() {
         <DemoBanner />
         <MobileTopBar />
         <main id="main" tabIndex={-1} className="flex-1 pb-28 outline-none lg:pb-0">
-          <Outlet />
+          <ErrorBoundary resetKey={location.pathname} fallback={({ error, reset }) => <ErrorScreen error={error} reset={reset} />}>
+            <Suspense fallback={<PageSkeleton />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </main>
         <Footer />
       </div>

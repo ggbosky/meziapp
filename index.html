@@ -2,17 +2,79 @@
 <html lang="cs">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="%APP_DESCRIPTION%" />
     <meta name="theme-color" content="#F4F8F3" />
+    <meta name="color-scheme" content="light" />
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/png" href="./favicon.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>%APP_NAME% · ukázkový prototyp</title>
+    <style>
+      /* Kostra zobrazená okamžitě, než se stáhne a spustí aplikace. */
+      html, body { margin: 0; background: #f4f8f3; }
+      .boot { min-height: 100vh; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #16312a; }
+      .boot-bar { height: 28px; background: #fff4d3; }
+      .boot-top { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 16px; border-bottom: 1px solid #e2ebe4; }
+      .boot-main { max-width: 68rem; margin: 0 auto; padding: 20px 16px; }
+      .boot-block { background: #e2ebe4; border-radius: 22px; }
+      .boot-pulse { animation: boot-pulse 1.4s ease-in-out infinite; }
+      @keyframes boot-pulse { 50% { opacity: 0.55; } }
+      @media (prefers-reduced-motion: reduce) { .boot-pulse { animation: none; } }
+      .boot-msg { max-width: 28rem; margin: 15vh auto 0; padding: 28px 24px; background: #fff; border-radius: 22px; text-align: center; box-shadow: 0 6px 18px -10px rgba(22, 49, 42, 0.25); }
+      .boot-msg h1 { margin: 0 0 8px; font-size: 22px; }
+      .boot-msg p { margin: 0 0 18px; line-height: 1.5; color: #55675d; }
+      .boot-msg button { min-height: 48px; padding: 0 22px; border: 0; border-radius: 14px; background: #22644a; color: #fff; font: 600 16px system-ui, sans-serif; cursor: pointer; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <noscript>Aplikace potřebuje zapnutý JavaScript.</noscript>
+    <div id="root">
+      <div class="boot" id="boot" aria-busy="true">
+        <div class="boot-bar"></div>
+        <div class="boot-top">
+          <img src="./favicon.png" alt="" width="32" height="32" />
+          <div class="boot-block boot-pulse" style="width: 104px; height: 36px; border-radius: 999px"></div>
+        </div>
+        <div class="boot-main" role="status">
+          <span style="position: absolute; left: -9999px">Načítáme aplikaci…</span>
+          <div class="boot-block boot-pulse" style="height: 300px; border-radius: 28px"></div>
+          <div class="boot-block boot-pulse" style="height: 48px; margin-top: 16px; border-radius: 18px"></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 28px">
+            <div class="boot-block boot-pulse" style="height: 104px"></div>
+            <div class="boot-block boot-pulse" style="height: 104px"></div>
+            <div class="boot-block boot-pulse" style="height: 104px"></div>
+            <div class="boot-block boot-pulse" style="height: 104px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <noscript>
+      <div class="boot-msg"><h1>Zapni prosím JavaScript</h1><p>Aplikace %APP_NAME% bez něj nemůže fungovat.</p></div>
+    </noscript>
+    <script>
+      // Hlídač startu: když se aplikace nespustí (starý prohlížeč, výpadek sítě,
+      // chyba skriptu), ukážeme místo prázdné stránky srozumitelnou zprávu.
+      (function () {
+        function fail() {
+          if (window.__meziMounted) return;
+          var root = document.getElementById('root');
+          if (!root || !document.getElementById('boot')) return;
+          root.innerHTML =
+            '<div class="boot-msg" role="alert"><h1>Aplikaci se nepodařilo spustit</h1>' +
+            '<p>Zkus stránku načíst znovu. Pokud to nepomůže, aktualizuj prosím prohlížeč nebo zkus jiný.</p>' +
+            '<button type="button" onclick="location.reload()">Načíst znovu</button></div>';
+        }
+        window.addEventListener('error', function (e) {
+          var t = e.target;
+          if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK')) fail();
+        }, true);
+        setTimeout(fail, 12000);
+      })();
+    </script>
+    <script nomodule>
+      document.getElementById('root').innerHTML =
+        '<div class="boot-msg" role="alert"><h1>Prohlížeč je příliš starý</h1><p>Aplikace potřebuje novější prohlížeč. Aktualizuj ho prosím, nebo otevři odkaz v jiném.</p></div>';
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

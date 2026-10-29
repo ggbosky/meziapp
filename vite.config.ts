@@ -10,6 +10,12 @@ const base = process.env.BASE_PATH && process.env.BASE_PATH.length > 0 ? process
 
 export default defineConfig({
   base,
+  build: {
+    // Starší iPhony (Safari 14) a prohlížeče přibližně od roku 2020: novější syntaxi
+    // převede build, aby se aplikace nespustila jako prázdná stránka.
+    target: ['es2020', 'safari14', 'chrome87', 'edge88', 'firefox78'],
+    cssTarget: ['safari14', 'chrome87', 'firefox78'],
+  },
   plugins: [
     react(),
     tailwindcss(),

@@ -1,26 +1,34 @@
+import { lazy, type ComponentType } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
-import { AdminLayout } from './pages/admin/AdminLayout';
-import { AdminOverview } from './pages/admin/AdminOverview';
-import { ApplicationDetailPage } from './pages/admin/ApplicationDetailPage';
-import { ApplicationsPage } from './pages/admin/ApplicationsPage';
-import { AppointmentsAdminPage } from './pages/admin/AppointmentsAdminPage';
-import { AuditPage } from './pages/admin/AuditPage';
-import { ProfilesPage } from './pages/admin/ProfilesPage';
 import { AppointmentDetailPage } from './pages/client/AppointmentDetailPage';
 import { BookingConfirmedPage } from './pages/client/BookingConfirmedPage';
 import { BookingPage } from './pages/client/BookingPage';
 import { ClientDashboard } from './pages/client/ClientDashboard';
-import { ApplicationPage } from './pages/professional/ApplicationPage';
-import { AvailabilityPage } from './pages/professional/AvailabilityPage';
-import { ConsultationsPage } from './pages/professional/ConsultationsPage';
-import { ProfessionalIndex, ProfessionalLayout } from './pages/professional/ProfessionalLayout';
-import { ProfilePage } from './pages/professional/ProfilePage';
 import { HomePage } from './pages/public/HomePage';
 import { AboutPrototypePage, ForProfessionalsPage, NotFoundPage, UrgentHelpPage } from './pages/public/InfoPages';
 import { PsychologistDetailPage } from './pages/public/PsychologistDetailPage';
 import { PsychologistsPage } from './pages/public/PsychologistsPage';
 import { TryDemoPage } from './pages/public/TryDemoPage';
+
+// Části pro odborníky a administraci se stahují až při prvním otevření,
+// aby byl první start aplikace pro klienty co nejrychlejší.
+const named = <T extends Record<string, unknown>, K extends keyof T>(load: () => Promise<T>, name: K) =>
+  lazy(() => load().then((m) => ({ default: m[name] as ComponentType })));
+
+const ProfessionalLayout = named(() => import('./pages/professional/ProfessionalLayout'), 'ProfessionalLayout');
+const ProfessionalIndex = named(() => import('./pages/professional/ProfessionalLayout'), 'ProfessionalIndex');
+const ApplicationPage = named(() => import('./pages/professional/ApplicationPage'), 'ApplicationPage');
+const AvailabilityPage = named(() => import('./pages/professional/AvailabilityPage'), 'AvailabilityPage');
+const ConsultationsPage = named(() => import('./pages/professional/ConsultationsPage'), 'ConsultationsPage');
+const ProfilePage = named(() => import('./pages/professional/ProfilePage'), 'ProfilePage');
+const AdminLayout = named(() => import('./pages/admin/AdminLayout'), 'AdminLayout');
+const AdminOverview = named(() => import('./pages/admin/AdminOverview'), 'AdminOverview');
+const ApplicationsPage = named(() => import('./pages/admin/ApplicationsPage'), 'ApplicationsPage');
+const ApplicationDetailPage = named(() => import('./pages/admin/ApplicationDetailPage'), 'ApplicationDetailPage');
+const ProfilesPage = named(() => import('./pages/admin/ProfilesPage'), 'ProfilesPage');
+const AppointmentsAdminPage = named(() => import('./pages/admin/AppointmentsAdminPage'), 'AppointmentsAdminPage');
+const AuditPage = named(() => import('./pages/admin/AuditPage'), 'AuditPage');
 
 /** Trasy aplikace. Router (HashRouter v prohlížeči, MemoryRouter v testech) dodává volající. */
 export function AppRoutes() {

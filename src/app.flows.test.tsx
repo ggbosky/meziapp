@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DEMO_USER_IDS } from './data/seed';
 import { createTestServices, MemoryStorage } from './test/helpers';
 import { renderApp } from './test/renderApp';
@@ -92,26 +92,26 @@ describe('průchody aplikací', () => {
   it('žadatel nevidí správu termínů, po schválení administrací ano', async () => {
     const services = await servicesAs(DEMO_USER_IDS.applicantPending);
     const first = renderApp('/odbornik/terminy', services);
-    expect(screen.getByRole('heading', { name: 'Dostupné po schválení přihlášky' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Dostupné po schválení přihlášky' })).toBeInTheDocument();
     first.unmount();
 
     await services.session.signInAs(DEMO_USER_IDS.admin);
     const admin = renderApp('/admin/zadosti/app-katerina', services);
-    await admin.user.click(screen.getByRole('button', { name: 'Schválit' }));
+    await admin.user.click(await screen.findByRole('button', { name: 'Schválit' }));
     await admin.user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Schválit přihlášku' }));
     expect(await screen.findAllByText('Schválená')).not.toHaveLength(0);
     admin.unmount();
 
     await services.session.signInAs(DEMO_USER_IDS.applicantPending);
     renderApp('/odbornik/terminy', services);
-    expect(screen.getByRole('heading', { name: 'Termíny' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Termíny' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Přidat termín' })).toBeEnabled();
   });
 
   it('psycholog vidí jen své rezervace a zkrácené jméno klienta', async () => {
     const services = await servicesAs(DEMO_USER_IDS.psychologistA);
     renderApp('/odbornik/konzultace', services);
-    expect(screen.getAllByText(/Klient Tereza M\./).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/Klient Tereza M\./)).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Tereza Malá/)).not.toBeInTheDocument();
   });
 
@@ -122,5 +122,21 @@ describe('průchody aplikací', () => {
     await user.click(screen.getAllByRole('button', { name: 'Obnovit demo' })[0]!);
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Obnovit demo data' }));
     expect(services.store.getState().appointments.find((a) => a.id === 'a-tereza-next')?.status).toBe('booked');
+  });
+
+  it('chyba při vykreslení stránky ukáže chybovou obrazovku místo prázdné stránky', async () => {
+    const services = await servicesAs(DEMO_USER_IDS.clientA);
+    // Simulujeme pád: čtení rezervací vyhodí výjimku.
+    services.appointments.listMine = () => {
+      throw new Error('Simulovaná chyba');
+    };
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { user } = renderApp('/klient', services);
+    expect(screen.getByRole('heading', { name: 'Tady se něco pokazilo' })).toBeInTheDocument();
+    // Navigace aplikace zůstává funkční.
+    expect(screen.getAllByRole('navigation', { name: 'Hlavní navigace' }).length).toBeGreaterThan(0);
+    await user.click(screen.getAllByRole('link', { name: 'Psychologové' })[0]!);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Psychologové' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Tady se něco pokazilo' })).not.toBeInTheDocument();
   });
 });
