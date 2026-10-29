@@ -14,6 +14,7 @@ import { ApplicationStatusBadge } from '../../components/ui/StatusBadge';
 import { useToast } from '../../components/ui/Toast';
 import { languageLabel, specializationLabel } from '../../domain/catalog';
 import { countLabel } from '../../domain/text';
+import { cityById } from '../../domain/places';
 import { formatTimestamp } from '../../domain/time';
 import type { PsychologistApplication } from '../../domain/types';
 import { INTERNAL_NOTE_MAX } from '../../domain/validation';
@@ -48,6 +49,8 @@ function ApplicationDetail({ app }: { app: PsychologistApplication }) {
     ['Jazyky', app.languages.map(languageLabel).join(', ') || '—'],
     ['Nabízená kapacita', `${countLabel(app.capacityPerMonth, 'konzultace', 'konzultace', 'konzultací')} měsíčně`],
     ['Profesní popis', app.bio],
+    ['Město a forma', `${cityById(app.cityId)?.name ?? 'Neuvedeno'} · ${app.offersInPerson ? 'online i osobně' : 'jen online'}`],
+    ['Dospívající klienti', app.worksWithYouth ? 'Pracuje i s dospívajícími' : 'Jen dospělí'],
     ['Demo účet', admin.getUserName(app.userId)],
   ];
 

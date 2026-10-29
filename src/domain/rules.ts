@@ -2,7 +2,7 @@ import { appConfig } from '../config/app';
 import { domainError, type DomainError } from './result';
 import type { DemoState } from './state';
 import { addMinutes, atTime, formatDayLong, formatTime } from './time';
-import type { Appointment, AppointmentStatus, AvailabilitySlot, ISODateTime, PsychologistProfile } from './types';
+import type { Appointment, AppointmentStatus, AvailabilitySlot, ConsultationFormat, ISODateTime, PsychologistProfile } from './types';
 
 /**
  * Čistá pravidla rezervací. Neznají úložiště ani uživatelské rozhraní,
@@ -95,6 +95,13 @@ export function checkBookable(state: DemoState, slotId: string, clientId: string
   if (!profile || !isProfileBookable(profile)) {
     return domainError('PROFILE_UNAVAILABLE', 'Tento odborník teď nepřijímá nové rezervace.');
   }
+  const client = state.users.find((u) => u.id === clientId);
+  if (client?.ageGroup === 'youth' && !profile.worksWithYouth) {
+    return domainError(
+      'NOT_FOR_YOUTH',
+      `Tento odborník zatím nepracuje s lidmi mladšími ${appConfig.adultAge} let. Vyber si prosím někoho, kdo má u profilu označení „Pracuje s dospívajícími“.`,
+    );
+  }
   const upcoming = state.appointments.filter((a) => a.clientId === clientId && isAppointmentUpcoming(a, now));
   const clash = upcoming.find((a) => rangesOverlap(a, slot));
   if (clash) {
@@ -117,9 +124,15 @@ export function checkBookable(state: DemoState, slotId: string, clientId: string
 export function checkNewSlot(
   state: DemoState,
   profileId: string,
-  input: { startsAt: ISODateTime; durationMinutes: number },
+  input: { startsAt: ISODateTime; durationMinutes: number; format?: ConsultationFormat },
   now: Date,
 ): DomainError | null {
+  if (input.format === 'in_person') {
+    const profile = state.profiles.find((p) => p.id === profileId);
+    if (!profile?.offersInPerson || !profile.cityId) {
+      return domainError('INVALID_INPUT', 'Osobní termín můžeš vypsat, až si v profilu nastavíš město praxe a zapneš osobní setkání.');
+    }
+  }
   if (!(appConfig.booking.durations as readonly number[]).includes(input.durationMinutes)) {
     return domainError('INVALID_INPUT', 'Délka konzultace může být 30 nebo 50 minut.');
   }

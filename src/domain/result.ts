@@ -11,7 +11,8 @@ export type ErrorCode =
   | 'CLIENT_OVERLAP'
   | 'BOOKING_LIMIT'
   | 'SLOT_OVERLAP'
-  | 'NOT_APPROVED';
+  | 'NOT_APPROVED'
+  | 'NOT_FOR_YOUTH';
 
 export interface DomainError {
   code: ErrorCode;

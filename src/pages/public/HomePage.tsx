@@ -7,6 +7,7 @@ import {
   GraduationCap,
   HandHeart,
   HeartHandshake,
+  MapPin,
   Hourglass,
   MessageCircleHeart,
   Search,
@@ -24,8 +25,10 @@ import { Avatar } from '../../components/ui/Avatar';
 import { ButtonLink } from '../../components/ui/Button';
 import { cn } from '../../components/ui/cn';
 import { HeroIllustration, TimeIllustration } from '../../components/ui/Illustrations';
+import { LocationBar } from '../../components/location/LocationBar';
 import { appConfig } from '../../config/app';
 import { SPECIALIZATIONS } from '../../domain/catalog';
+import { formatDistance } from '../../domain/places';
 import { atTime, formatDateTime, formatRelativeDay, formatTimeRange } from '../../domain/time';
 import type { SpecializationId } from '../../domain/types';
 
@@ -68,7 +71,7 @@ const FAQ = [
   },
   {
     q: 'Pro koho je služba určená?',
-    a: `První verze je určená lidem od ${appConfig.minimumAge} let.`,
+    a: `Lidem od ${appConfig.minimumAge} let. Pokud je ti ${appConfig.minimumAge}–${appConfig.adultAge - 1}, ukážeme ti odborníky, kteří pracují s dospívajícími. Pravidla pro souhlas rodičů u nezletilých se před spuštěním služby ověří s právníky.`,
   },
   {
     q: 'Jsou údaje v aplikaci skutečné?',
@@ -114,11 +117,112 @@ function NextBooking() {
   );
 }
 
+function NearbySection() {
+  const { profiles, session } = useServices();
+  const user = useCurrentUser();
+  const now = useNow();
+  const location = session.getLocation();
+  const radius = appConfig.location.nearbyRadiusKm;
+  const nearby = location
+    ? profiles
+        .listPublic({ nearCityId: location.id, sort: 'distance', youthOnly: user?.role === 'client' && user.ageGroup === 'youth' })
+        .filter((s) => s.distanceKm !== null && s.distanceKm <= radius)
+        .slice(0, 4)
+    : [];
+  return (
+    <section aria-labelledby="nearby-title">
+      <SectionHead
+        id="nearby-title"
+        title="Psychologové ve tvém okolí"
+        action={
+          location ? (
+            <Link to="/psychologove" className="link shrink-0 text-sm">
+              Zobrazit vše
+            </Link>
+          ) : undefined
+        }
+      />
+      <LocationBar />
+      {location &&
+        (nearby.length === 0 ? (
+          <p className="mt-3 rounded-[var(--radius-card)] bg-surface p-5 text-muted shadow-soft">
+            Do {radius} km od města {location.name} teď nikoho nemáme. Konzultace online jsou ale dostupné odkudkoli.
+          </p>
+        ) : (
+          <ul className="no-scrollbar -mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 xl:grid-cols-4">
+            {nearby.map(({ profile, city, distanceKm: km, nextSlot }) => (
+              <li key={profile.id} className="w-[15.5rem] shrink-0 snap-start sm:w-auto">
+                <Link
+                  to={`/psychologove/${profile.id}`}
+                  className="flex h-full flex-col rounded-[var(--radius-card)] bg-surface p-4 shadow-soft transition-shadow hover:shadow-raised"
+                >
+                  <span className="flex items-center gap-3">
+                    <Avatar name={profile.professionalName} tone={profile.avatarTone} size="sm" />
+                    <span className="min-w-0">
+                      <span className="block truncate font-bold">{profile.professionalName}</span>
+                      <span className="flex items-center gap-1 truncate text-sm text-muted">
+                        <MapPin aria-hidden className="size-3.5 shrink-0" />
+                        {city?.name} · {km !== null ? formatDistance(km) : ''}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="mt-3 flex flex-wrap gap-1.5 text-xs font-semibold">
+                    <span className="rounded-full bg-sage-100 px-2.5 py-0.5 text-brand-900">{profile.offersInPerson ? 'Online i osobně' : 'Online'}</span>
+                    {nextSlot && (
+                      <span className="rounded-full bg-sun-soft px-2.5 py-0.5 text-ink first-letter:uppercase">
+                        {formatRelativeDay(nextSlot.startsAt, now)} {atTime(nextSlot.startsAt)}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ))}
+    </section>
+  );
+}
+
+function YouthSection() {
+  const youth = appConfig.urgentHelp.verifiedContacts.find((c) => c.audience === 'youth');
+  return (
+    <section aria-labelledby="youth-title" className="overflow-hidden rounded-[28px] bg-sun-soft">
+      <div className="p-6 sm:p-8">
+        <p className="inline-flex rounded-full bg-white px-3 py-1 text-sm font-semibold text-amber-ink">
+          Je ti {appConfig.minimumAge}–{appConfig.adultAge - 1}?
+        </p>
+        <h2 id="youth-title" className="mt-3 text-2xl font-extrabold leading-tight text-ink sm:text-3xl">
+          Bojíš se o tom mluvit? To je úplně v pořádku.
+        </h2>
+        <p className="mt-3 max-w-xl leading-relaxed text-ink/80">
+          Nemusíš vědět, jak začít, ani mít všechno vymyšlené. Někteří naši psychologové pracují právě s dospívajícími a nikdo tě
+          tu nebude soudit. Na začátku ti vysvětlí, co zůstane jen mezi vámi a kdy by bylo potřeba zapojit rodiče.
+        </p>
+        <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
+          <ButtonLink to="/psychologove?mladi=1" size="lg" icon={<Sprout aria-hidden className="size-5" />}>
+            Psychologové pro dospívající
+          </ButtonLink>
+          {youth && (
+            <a
+              href={youth.href}
+              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-[14px] border-2 border-amber-line bg-white px-5 text-center font-semibold text-ink"
+            >
+              {youth.name}: {youth.contact}
+            </a>
+          )}
+        </div>
+        {youth && <p className="mt-3 text-sm text-ink/70">Potřebuješ si promluvit hned? {youth.name} je nonstop, zdarma a anonymně.</p>}
+      </div>
+    </section>
+  );
+}
+
 function SoonSlots() {
   const { profiles } = useServices();
+  const user = useCurrentUser();
   const now = useNow();
   const items = profiles
-    .listPublic({ sort: 'soonest' })
+    .listPublic({ sort: 'soonest', youthOnly: user?.role === 'client' && user.ageGroup === 'youth' })
     .filter((s) => s.nextSlot)
     .slice(0, 4);
   return (
@@ -201,6 +305,8 @@ export function HomePage() {
 
       <NextBooking />
 
+      <NearbySection />
+
       <section aria-labelledby="topics-title">
         <SectionHead id="topics-title" title="S čím ti můžeme pomoct?" />
         <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
@@ -223,6 +329,8 @@ export function HomePage() {
       </section>
 
       <SoonSlots />
+
+      <YouthSection />
 
       <section aria-labelledby="steps-title">
         <SectionHead id="steps-title" title="Jak to funguje" />

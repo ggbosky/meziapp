@@ -7,6 +7,7 @@ import type {
   AuditEvent,
   AvailabilitySlot,
   ConsultationDuration,
+  ConsultationFormat,
   Feedback,
   PsychologistApplication,
   PsychologistProfile,
@@ -23,6 +24,7 @@ import { SCHEMA_VERSION } from '../storage/schemaVersion';
 export const DEMO_USER_IDS = {
   clientA: 'u-tereza',
   clientB: 'u-ondrej',
+  clientYouth: 'u-ema',
   psychologistA: 'u-alzbeta',
   psychologistB: 'u-vojtech',
   applicantPending: 'u-katerina',
@@ -38,8 +40,8 @@ interface ProfileSeed extends ApplicationFields {
   approvedDaysAgo: number;
   status: 'active' | 'suspended';
   avatarTone: number;
-  /** Týdenní vzor termínů: den v týdnu (0 = pondělí) → začátky. */
-  pattern: Partial<Record<number, Array<[string, ConsultationDuration]>>>;
+  /** Týdenní vzor termínů: den v týdnu (0 = pondělí) → začátky a forma. */
+  pattern: Partial<Record<number, Array<[string, ConsultationDuration, ConsultationFormat?]>>>;
 }
 
 const PROFILE_SEEDS: ProfileSeed[] = [
@@ -53,12 +55,15 @@ const PROFILE_SEEDS: ProfileSeed[] = [
     languages: ['cs', 'en'],
     capacityPerMonth: 8,
     bio: 'Smyšlená postava pro ukázku aplikace. V příběhu prototypu pracuje v poradně pro dospělé a část svého času nabízí zdarma.',
+    cityId: 'praha',
+    offersInPerson: true,
+    worksWithYouth: false,
     approach:
       'Na první konzultaci se spolu podíváme, s čím přicházíš a co by ti teď mohlo pomoct. Nemusíš mít předem připravené téma ani přesná slova. Pracuji klidným tempem a společně hledáme, jaký další krok dává smysl.',
     approvedDaysAgo: 96,
     status: 'active',
     avatarTone: 0,
-    pattern: { 0: [['09:00', 50]], 2: [['16:00', 50], ['17:00', 50]], 4: [['10:00', 30]] },
+    pattern: { 0: [['09:00', 50]], 2: [['16:00', 50, 'in_person'], ['17:00', 50, 'in_person']], 4: [['10:00', 30]] },
   },
   {
     key: 'vojtech',
@@ -70,12 +75,15 @@ const PROFILE_SEEDS: ProfileSeed[] = [
     languages: ['cs', 'sk'],
     capacityPerMonth: 6,
     bio: 'Smyšlená postava pro ukázku aplikace. Konzultace nabízí převážně ve večerních hodinách.',
+    cityId: 'brno',
+    offersInPerson: true,
+    worksWithYouth: true,
     approach:
       'Konzultace beru jako bezpečný prostor, kde můžeš v klidu mluvit o tom, co se teď děje. Zajímá mě tvůj pohled a tempo. Na konci se domluvíme, co si z rozhovoru odnášíš a kde případně hledat další podporu.',
     approvedDaysAgo: 74,
     status: 'active',
     avatarTone: 1,
-    pattern: { 1: [['17:30', 50], ['18:30', 50]], 3: [['08:00', 30], ['08:40', 30]] },
+    pattern: { 1: [['17:30', 50], ['18:30', 50]], 3: [['08:00', 30, 'in_person'], ['08:40', 30, 'in_person']] },
   },
   {
     key: 'hana',
@@ -87,12 +95,15 @@ const PROFILE_SEEDS: ProfileSeed[] = [
     languages: ['cs', 'de'],
     capacityPerMonth: 6,
     bio: 'Smyšlená postava pro ukázku aplikace. Konzultace vede česky nebo německy.',
+    cityId: 'olomouc',
+    offersInPerson: true,
+    worksWithYouth: false,
     approach:
       'Ráda nejdřív poslouchám. Společně si můžeme ujasnit, co je pro tebe teď nejtěžší a co ti v podobných chvílích pomáhalo dřív. Neslibuji rychlá řešení, ale nabízím pozornost a otevřený rozhovor.',
     approvedDaysAgo: 61,
     status: 'active',
     avatarTone: 2,
-    pattern: { 0: [['14:00', 50]], 3: [['14:00', 50], ['15:00', 50]] },
+    pattern: { 0: [['14:00', 50, 'in_person']], 3: [['14:00', 50], ['15:00', 50]] },
   },
   {
     key: 'daniel',
@@ -104,6 +115,9 @@ const PROFILE_SEEDS: ProfileSeed[] = [
     languages: ['cs', 'en'],
     capacityPerMonth: 4,
     bio: 'Smyšlená postava pro ukázku aplikace. Nové termíny vypisuje nepravidelně.',
+    cityId: 'praha',
+    offersInPerson: false,
+    worksWithYouth: false,
     approach:
       'Pomáhám zorientovat se v situacích, kdy je toho na člověka moc. Na konzultaci můžeme probrat, co tě teď zatěžuje, a podívat se na možnosti, které máš k dispozici.',
     approvedDaysAgo: 48,
@@ -121,12 +135,15 @@ const PROFILE_SEEDS: ProfileSeed[] = [
     languages: ['cs', 'uk', 'en'],
     capacityPerMonth: 10,
     bio: 'Smyšlená postava pro ukázku aplikace. Konzultace nabízí česky, ukrajinsky nebo anglicky.',
+    cityId: 'ostrava',
+    offersInPerson: true,
+    worksWithYouth: true,
     approach:
       'Na konzultaci je místo pro cokoli, co právě řešíš, i když to zatím neumíš pojmenovat. Společně se podíváme, co by ti mohlo ulevit, a domluvíme se, jestli a jak pokračovat.',
     approvedDaysAgo: 33,
     status: 'active',
     avatarTone: 4,
-    pattern: { 1: [['10:00', 50]], 5: [['09:00', 50], ['10:00', 50]] },
+    pattern: { 1: [['10:00', 50]], 5: [['09:00', 50, 'in_person'], ['10:00', 50, 'in_person']] },
   },
   {
     key: 'filip',
@@ -138,6 +155,9 @@ const PROFILE_SEEDS: ProfileSeed[] = [
     languages: ['cs'],
     capacityPerMonth: 4,
     bio: 'Smyšlená postava pro ukázku aplikace. Profil je dočasně pozastavený administrací.',
+    cityId: 'plzen',
+    offersInPerson: true,
+    worksWithYouth: false,
     approach:
       'Konzultace vedu otevřeně a bez spěchu. Společně se zaměříme na to, co je pro tebe teď důležité.',
     approvedDaysAgo: 120,
@@ -158,6 +178,9 @@ const PENDING_APPLICATIONS: Array<ApplicationFields & { key: string; submittedDa
     languages: ['cs', 'en'],
     capacityPerMonth: 5,
     bio: 'Smyšlená žadatelka. Chtěla by nabídnout několik večerních konzultací měsíčně.',
+    cityId: 'liberec',
+    offersInPerson: true,
+    worksWithYouth: true,
     submittedDaysAgo: 2,
   },
   {
@@ -170,6 +193,9 @@ const PENDING_APPLICATIONS: Array<ApplicationFields & { key: string; submittedDa
     languages: ['cs', 'sk'],
     capacityPerMonth: 4,
     bio: 'Smyšlený žadatel se zájmem o konzultace pro mladé dospělé.',
+    cityId: 'brno',
+    offersInPerson: false,
+    worksWithYouth: true,
     submittedDaysAgo: 1,
   },
 ];
@@ -188,16 +214,30 @@ export function createSeed(now: Date): DemoState {
       role: 'client',
       displayName: 'Tereza Malá',
       email: 'tereza.demo@example.com',
-      demoDescription: 'Má jednu naplánovanou konzultaci a několik záznamů v historii.',
+      demoDescription: 'Dospělá klientka z Kladna. Má jednu naplánovanou konzultaci a historii.',
       createdAt: daysAgo(40),
+      homeCityId: 'kladno',
+      ageGroup: 'adult',
     },
     {
       id: DEMO_USER_IDS.clientB,
       role: 'client',
       displayName: 'Ondřej Král',
       email: 'ondrej.demo@example.com',
-      demoDescription: 'Má naplánovanou večerní konzultaci a jednu zrušenou odborníkem.',
+      demoDescription: 'Dospělý klient bez zadané polohy. Má naplánovanou večerní konzultaci.',
       createdAt: daysAgo(25),
+      homeCityId: null,
+      ageGroup: 'adult',
+    },
+    {
+      id: DEMO_USER_IDS.clientYouth,
+      role: 'client',
+      displayName: 'Ema Svobodová',
+      email: 'ema.demo@example.com',
+      demoDescription: 'Šestnáctiletá klientka z Brna. Zatím žádnou konzultaci nemá.',
+      createdAt: daysAgo(3),
+      homeCityId: 'brno',
+      ageGroup: 'youth',
     },
     {
       id: DEMO_USER_IDS.admin,
@@ -206,6 +246,8 @@ export function createSeed(now: Date): DemoState {
       email: 'admin.demo@example.com',
       demoDescription: 'Posuzuje přihlášky, spravuje profily a vidí provozní přehled.',
       createdAt: daysAgo(200),
+      homeCityId: null,
+      ageGroup: null,
     },
     {
       id: DEMO_USER_IDS.applicantNew,
@@ -214,6 +256,8 @@ export function createSeed(now: Date): DemoState {
       email: 'lenka.demo@example.com',
       demoDescription: 'Nový žadatel. Přihlášku zatím nevyplnil.',
       createdAt: daysAgo(0, '08:00'),
+      homeCityId: null,
+      ageGroup: null,
     },
   ];
 
@@ -235,6 +279,9 @@ export function createSeed(now: Date): DemoState {
       languages: seed.languages,
       capacityPerMonth: seed.capacityPerMonth,
       bio: seed.bio,
+      cityId: seed.cityId,
+      offersInPerson: seed.offersInPerson,
+      worksWithYouth: seed.worksWithYouth,
     };
     users.push({
       id: userId,
@@ -246,6 +293,8 @@ export function createSeed(now: Date): DemoState {
           ? 'Schválený profil s vypsanými termíny a rezervacemi.'
           : 'Profil pozastavený administrací.',
       createdAt: daysAgo(seed.approvedDaysAgo + 6),
+      homeCityId: null,
+      ageGroup: null,
     });
     applications.push({
       ...fields,
@@ -301,7 +350,7 @@ export function createSeed(now: Date): DemoState {
       const key = addDaysToKey(today, offset);
       const { year, month, day } = parseDateKey(key);
       const weekday = (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7;
-      for (const [time, duration] of seed.pattern[weekday] ?? []) {
+      for (const [time, duration, format = 'online'] of seed.pattern[weekday] ?? []) {
         const start = at(offset, time);
         if (start.getTime() < earliest) continue;
         slots.push({
@@ -309,6 +358,7 @@ export function createSeed(now: Date): DemoState {
           profileId,
           startsAt: toISO(start),
           durationMinutes: duration,
+          format,
           status: 'published',
           createdAt: daysAgo(Math.max(1, 7 - offset)),
           withdrawnAt: null,
@@ -326,6 +376,8 @@ export function createSeed(now: Date): DemoState {
       email: `${key}.demo@example.com`,
       demoDescription: 'Odeslaná přihláška čeká na posouzení administrací.',
       createdAt: daysAgo(submittedDaysAgo + 1),
+      homeCityId: null,
+      ageGroup: null,
     });
     applications.push({
       ...fields,
@@ -350,6 +402,8 @@ export function createSeed(now: Date): DemoState {
     email: 'radek.demo@example.com',
     demoDescription: 'Zamítnutá přihláška (není v nabídce demo účtů).',
     createdAt: daysAgo(30),
+    homeCityId: null,
+    ageGroup: null,
   });
   applications.push({
     id: 'app-radek',
@@ -362,6 +416,9 @@ export function createSeed(now: Date): DemoState {
     languages: ['cs'],
     capacityPerMonth: 20,
     bio: 'Smyšlený žadatel pro ukázku zamítnuté přihlášky.',
+    cityId: 'plzen',
+    offersInPerson: true,
+    worksWithYouth: false,
     createdAt: daysAgo(30),
     updatedAt: daysAgo(20, '13:05'),
     submittedAt: daysAgo(28),
@@ -391,6 +448,7 @@ export function createSeed(now: Date): DemoState {
       profileId: `p-${profileKey}`,
       startsAt: toISO(start),
       durationMinutes: duration,
+      format: 'online',
       status: withdrawn ? 'withdrawn' : 'published',
       createdAt: toISO(addMinutes(start, -10 * 24 * 60)),
       withdrawnAt: withdrawn ? toISO(addMinutes(start, -2 * 24 * 60)) : null,
@@ -414,6 +472,7 @@ export function createSeed(now: Date): DemoState {
       clientId,
       startsAt: slot.startsAt,
       durationMinutes: slot.durationMinutes,
+      format: slot.format,
       status,
       createdAt: toISO(addMinutes(start, -createdDaysBefore * 24 * 60)),
       cancelledAt: status.startsWith('cancelled') ? toISO(addMinutes(start, -24 * 60)) : null,
@@ -455,7 +514,7 @@ export function createSeed(now: Date): DemoState {
   return {
     schemaVersion: SCHEMA_VERSION,
     seededAt: toISO(now),
-    session: { userId: null },
+    session: { userId: null, cityId: null },
     users,
     applications,
     profiles,

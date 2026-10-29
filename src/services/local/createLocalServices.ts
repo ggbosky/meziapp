@@ -11,6 +11,7 @@ import {
   slotState,
 } from '../../domain/rules';
 import type { DemoState } from '../../domain/state';
+import { cityById, distanceKm } from '../../domain/places';
 import { shortName } from '../../domain/text';
 import { addMinutes, toISO } from '../../domain/time';
 import type {
@@ -67,6 +68,9 @@ function sanitizeFields(fields: ApplicationFields): ApplicationFields {
     languages: [...new Set(fields.languages)],
     capacityPerMonth: fields.capacityPerMonth,
     bio: fields.bio.trim(),
+    cityId: fields.cityId,
+    offersInPerson: fields.offersInPerson,
+    worksWithYouth: fields.worksWithYouth,
   };
 }
 
@@ -116,11 +120,27 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
       store.transact((state) => {
         const user = state.users.find((u) => u.id === userId);
         if (!user) return fail('NOT_FOUND', 'Tento demo účet neexistuje. Zkus obnovit demo data.');
-        return ok({ state: { ...state, session: { userId } }, value: user });
+        return ok({ state: { ...state, session: { ...state.session, userId } }, value: user });
       }),
     signOut: async () => {
-      store.transact((state) => ok({ state: { ...state, session: { userId: null } }, value: null }));
+      store.transact((state) => ok({ state: { ...state, session: { ...state.session, userId: null } }, value: null }));
     },
+    getLocation: () => {
+      const state = read();
+      const user = currentUser(state);
+      return cityById(user?.role === 'client' ? user.homeCityId : state.session.cityId);
+    },
+    setLocation: async (cityId) =>
+      store.transact((state) => {
+        if (cityId !== null && !cityById(cityId)) return fail('INVALID_INPUT', 'Vyber město ze seznamu.');
+        const user = currentUser(state);
+        // Klientovi se poloha uloží do účtu, ostatním jen do tohoto prohlížeče.
+        if (user?.role === 'client') {
+          const updated = { ...user, homeCityId: cityId };
+          return ok({ state: { ...state, users: replaceById(state.users, updated) }, value: cityById(cityId) });
+        }
+        return ok({ state: { ...state, session: { ...state.session, cityId } }, value: cityById(cityId) });
+      }),
   };
 
   // ——— Profily ———
@@ -129,12 +149,22 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
     listPublic: (query: CatalogQuery = {}) => {
       const state = read();
       const t = now();
+      const origin = cityById(query.nearCityId);
       let items: PublicProfileSummary[] = state.profiles
         .filter((p) => p.status === 'active')
         .map((profile) => {
           const open = bookableSlotsForProfile(state, profile.id, t);
-          return { profile, nextSlot: open[0] ?? null, openSlotCount: open.length };
+          const city = cityById(profile.cityId);
+          return {
+            profile,
+            nextSlot: open[0] ?? null,
+            openSlotCount: open.length,
+            city,
+            distanceKm: origin && city ? distanceKm(origin, city) : null,
+          };
         });
+      if (query.inPersonOnly) items = items.filter((i) => i.profile.offersInPerson && i.city);
+      if (query.youthOnly) items = items.filter((i) => i.profile.worksWithYouth);
       if (query.specialization) items = items.filter((i) => i.profile.specializations.includes(query.specialization!));
       if (query.language) items = items.filter((i) => i.profile.languages.includes(query.language!));
       if (query.availableWithinDays) {
@@ -144,6 +174,9 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
       const byName = (a: PublicProfileSummary, b: PublicProfileSummary) =>
         a.profile.professionalName.localeCompare(b.profile.professionalName, 'cs');
       if (query.sort === 'name') return items.sort(byName);
+      if (query.sort === 'distance') {
+        return items.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) || byName(a, b));
+      }
       return items.sort((a, b) => {
         if (a.nextSlot && b.nextSlot) return Date.parse(a.nextSlot.startsAt) - Date.parse(b.nextSlot.startsAt);
         if (a.nextSlot) return -1;
@@ -175,6 +208,9 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
           bio: input.bio.trim(),
           specializations: [...new Set(input.specializations)],
           languages: [...new Set(input.languages)],
+          cityId: input.cityId,
+          offersInPerson: input.offersInPerson,
+          worksWithYouth: input.worksWithYouth,
         };
         return ok({ state: { ...state, profiles: replaceById(state.profiles, profile) }, value: profile });
       }),
@@ -279,6 +315,7 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
           profileId: profile.id,
           startsAt: toISO(new Date(input.startsAt)),
           durationMinutes: input.durationMinutes,
+          format: input.format,
           status: 'published',
           createdAt: toISO(now()),
           withdrawnAt: null,
@@ -321,11 +358,17 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
   };
 
   const appointments: AppServices['appointments'] = {
-    book: async (slotId) =>
-      store.transact((state): Change<Appointment> => {
-        const userResult = requireRole(state, 'client');
+    book: async (slotId, options = {}) =>
+      store.transact((current): Change<Appointment> => {
+        const userResult = requireRole(current, 'client');
         if (!userResult.ok) return userResult;
-        const client = userResult.value;
+        let state = current;
+        let client = userResult.value;
+        // Věková skupina potvrzená při rezervaci se uloží do účtu a hned se podle ní ověřuje.
+        if (options.ageGroup && options.ageGroup !== client.ageGroup) {
+          client = { ...client, ageGroup: options.ageGroup };
+          state = { ...state, users: replaceById(state.users, client) };
+        }
         // Opakované odeslání stejné rezervace (dvojklik) vrátí už vytvořenou rezervaci.
         const existing = state.appointments.find((a) => a.slotId === slotId && a.clientId === client.id && a.status === 'booked');
         if (existing) return ok({ state, value: existing });
@@ -340,6 +383,7 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
           clientId: client.id,
           startsAt: slot.startsAt,
           durationMinutes: slot.durationMinutes,
+          format: slot.format,
           status: 'booked',
           createdAt: toISO(t),
           cancelledAt: null,
@@ -499,6 +543,9 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
           specializations: app.specializations,
           languages: app.languages,
           capacityPerMonth: app.capacityPerMonth,
+          cityId: app.cityId,
+          offersInPerson: app.offersInPerson,
+          worksWithYouth: app.worksWithYouth,
           approach: '',
           bio: app.bio,
           status: 'active',

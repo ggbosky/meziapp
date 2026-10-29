@@ -1,6 +1,7 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { languageLabel, specializationLabel } from '../../domain/catalog';
+import { formatDistance } from '../../domain/places';
 import { atTime, formatRelativeDay } from '../../domain/time';
 import type { PublicProfileSummary } from '../../services/types';
 import { Avatar } from '../ui/Avatar';
@@ -21,6 +22,19 @@ export function PsychologistCard({ summary, now }: { summary: PublicProfileSumma
           <p className="text-sm text-muted">
             {profile.professionalRole} · {profile.languages.map(languageLabel).join(', ')}
           </p>
+          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm font-semibold text-ink/80">
+            <MapPin aria-hidden className="size-4 shrink-0 text-brand-700" />
+            {summary.city ? summary.city.name : 'Jen online'}
+            {summary.distanceKm !== null && <span className="font-medium text-muted">· {formatDistance(summary.distanceKm)}</span>}
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Forma a zaměření práce">
+            <li className="rounded-full bg-sage-100 px-2.5 py-0.5 text-xs font-semibold text-brand-900">
+              {profile.offersInPerson && summary.city ? 'Online i osobně' : 'Online'}
+            </li>
+            {profile.worksWithYouth && (
+              <li className="rounded-full bg-sun-soft px-2.5 py-0.5 text-xs font-semibold text-amber-ink">Pracuje s dospívajícími</li>
+            )}
+          </ul>
           <p className="mt-2 line-clamp-2 text-sm leading-snug text-ink/80">
             <span className="sr-only">Zaměření: </span>
             {profile.specializations.map(specializationLabel).join(' · ')}

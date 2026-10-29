@@ -1,5 +1,6 @@
 import { LANGUAGE_CODES, SPECIALIZATION_IDS } from '../domain/catalog';
 import type { DemoState } from '../domain/state';
+import { CITY_IDS } from '../domain/places';
 import { isValidISO } from '../domain/time';
 import { SCHEMA_VERSION } from './schemaVersion';
 
@@ -35,6 +36,8 @@ function matches(value: unknown, shape: Shape): boolean {
 
 const specializations = arrayOf(oneOf(...SPECIALIZATION_IDS));
 const languages = arrayOf(oneOf(...LANGUAGE_CODES));
+const cityOrNull = (v: unknown): boolean => v === null || (isString(v) && CITY_IDS.includes(v));
+const format = oneOf('online', 'in_person');
 
 const applicationFields: Shape = {
   professionalName: isString,
@@ -44,6 +47,9 @@ const applicationFields: Shape = {
   languages,
   capacityPerMonth: isFiniteNumber,
   bio: isString,
+  cityId: cityOrNull,
+  offersInPerson: isBool,
+  worksWithYouth: isBool,
 };
 
 const shapes = {
@@ -54,6 +60,8 @@ const shapes = {
     email: isString,
     demoDescription: isString,
     createdAt: isISO,
+    homeCityId: cityOrNull,
+    ageGroup: (v: unknown) => v === null || v === 'adult' || v === 'youth',
   },
   application: {
     ...applicationFields,
@@ -86,6 +94,7 @@ const shapes = {
     profileId: isString,
     startsAt: isISO,
     durationMinutes: oneOf(30, 50),
+    format,
     status: oneOf('published', 'withdrawn'),
     createdAt: isISO,
     withdrawnAt: isISOOrNull,
@@ -97,6 +106,7 @@ const shapes = {
     clientId: isString,
     startsAt: isISO,
     durationMinutes: oneOf(30, 50),
+    format,
     status: oneOf('booked', 'cancelled_by_client', 'cancelled_by_psychologist', 'completed'),
     createdAt: isISO,
     cancelledAt: isISOOrNull,
@@ -135,7 +145,9 @@ export function validateDemoState(raw: unknown): ValidationResult {
     return { ok: false, reason: `Nepodporovaná verze schématu (${String(raw.schemaVersion)}).` };
   }
   if (!isISO(raw.seededAt)) return { ok: false, reason: 'Chybí datum vytvoření dat.' };
-  if (!isRecord(raw.session) || !isStringOrNull(raw.session.userId)) return { ok: false, reason: 'Neplatná relace.' };
+  if (!isRecord(raw.session) || !isStringOrNull(raw.session.userId) || !cityOrNull(raw.session.cityId)) {
+    return { ok: false, reason: 'Neplatná relace.' };
+  }
 
   const collections: Array<[keyof typeof shapes, string]> = [
     ['user', 'users'],

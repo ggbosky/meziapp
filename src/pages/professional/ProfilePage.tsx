@@ -7,7 +7,9 @@ import { Alert } from '../../components/ui/Alert';
 import { Avatar } from '../../components/ui/Avatar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { ChipCheckboxGroup, TextArea } from '../../components/ui/Field';
+import { Checkbox, ChipCheckboxGroup, TextArea } from '../../components/ui/Field';
+import { CitySelect } from '../../components/location/CitySelect';
+import { appConfig } from '../../config/app';
 import { PageHeader, SectionTitle } from '../../components/ui/PageHeader';
 import { ProfileStatusBadge } from '../../components/ui/StatusBadge';
 import { useToast } from '../../components/ui/Toast';
@@ -44,6 +46,9 @@ function ProfileForm({ profile }: { profile: PsychologistProfile }) {
     bio: profile.bio,
     specializations: profile.specializations,
     languages: profile.languages,
+    cityId: profile.cityId,
+    offersInPerson: profile.offersInPerson,
+    worksWithYouth: profile.worksWithYouth,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [save, saving] = useAction(profiles.updateOwnProfile);
@@ -117,6 +122,28 @@ function ProfileForm({ profile }: { profile: PsychologistProfile }) {
             error={errors.languages}
             required
           />
+          <div className="space-y-3 rounded-2xl bg-canvas p-4">
+            <CitySelect
+              label="Město praxe"
+              value={form.cityId}
+              onChange={(v) => set('cityId', v)}
+              emptyLabel="Neuvádět (jen online)"
+              hint="Klienti uvidí jen město a přibližnou vzdálenost, ne adresu."
+              error={errors.cityId}
+            />
+            <Checkbox
+              checked={form.offersInPerson}
+              onChange={(v) => set('offersInPerson', v)}
+              label="Nabízím i osobní setkání"
+              description="U nových termínů pak můžeš zvolit, jestli budou online, nebo osobně."
+            />
+            <Checkbox
+              checked={form.worksWithYouth}
+              onChange={(v) => set('worksWithYouth', v)}
+              label={`Pracuji i s dospívajícími (${appConfig.minimumAge}–${appConfig.adultAge - 1} let)`}
+              description="Dospívající klienti uvidí jen odborníky s tímto označením."
+            />
+          </div>
           {Object.keys(errors).length > 0 && (
             <Alert tone="error" live>
               {errors.form ?? 'Zkontroluj prosím zvýrazněná pole.'}

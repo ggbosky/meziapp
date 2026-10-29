@@ -1,7 +1,8 @@
 import { CalendarPlus, CalendarX2, Clock, Info, Search } from 'lucide-react';
 import { useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
 import { AppointmentRow } from '../../components/booking/AppointmentRow';
-import { JoinCallButton } from '../../components/booking/JoinCallDialog';
+import { MeetingButton } from '../../components/booking/JoinCallDialog';
+import { cityById, formatLabel } from '../../domain/places';
 import { RequireRole } from '../../components/layout/RequireRole';
 import { usePageTitle } from '../../components/layout/usePageTitle';
 import { Avatar } from '../../components/ui/Avatar';
@@ -59,7 +60,7 @@ function ClientOverview() {
                   </p>
                   <p className="mt-1 flex items-center gap-2 text-sm text-white/80">
                     <Clock aria-hidden className="size-4" />
-                    {formatTimeRange(next.appointment.startsAt, next.appointment.durationMinutes)} · {next.appointment.durationMinutes} minut · online
+                    {formatTimeRange(next.appointment.startsAt, next.appointment.durationMinutes)} · {next.appointment.durationMinutes} minut · {formatLabel(next.appointment.format, next.profile.cityId).toLowerCase()}
                   </p>
                 </div>
                 <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -74,7 +75,7 @@ function ClientOverview() {
                     <ButtonLink to={`/klient/rezervace/${next.appointment.id}`} variant="secondary">
                       Detail rezervace
                     </ButtonLink>
-                    <JoinCallButton />
+                    <MeetingButton format={next.appointment.format} cityName={cityById(next.profile.cityId)?.name ?? null} />
                   </div>
                 </div>
               </Card>

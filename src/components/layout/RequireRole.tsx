@@ -11,7 +11,7 @@ const COPY: Record<UserRole, { title: string; text: string; accounts: string[] }
   client: {
     title: 'Tahle část je pro demo účet klienta',
     text: 'Vstup do jednoho z fiktivních klientských účtů a uvidíš jeho rezervace.',
-    accounts: [DEMO_USER_IDS.clientA, DEMO_USER_IDS.clientB],
+    accounts: [DEMO_USER_IDS.clientA, DEMO_USER_IDS.clientB, DEMO_USER_IDS.clientYouth],
   },
   professional: {
     title: 'Tahle část je pro odborníky',

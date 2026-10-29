@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, BadgeCheck, CalendarOff, CircleDashed, Languages, UserX } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, CalendarOff, CircleDashed, Languages, MapPin, UserX } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
@@ -10,13 +10,14 @@ import { Button, ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { languageLabel, specializationLabel } from '../../domain/catalog';
+import { cityById, distanceKm, formatDistance } from '../../domain/places';
 import { atTime, formatDate, formatRelativeDay } from '../../domain/time';
 
 const PANEL_TONES = ['bg-sage-100', 'bg-sun-soft', 'bg-peach-soft', 'bg-sky-soft', 'bg-sage-100', 'bg-peach-soft'];
 
 export function PsychologistDetailPage() {
   const { profileId = '' } = useParams();
-  const { profiles } = useServices();
+  const { profiles, session } = useServices();
   useDemoSnapshot();
   const now = useNow();
   const navigate = useNavigate();
@@ -24,6 +25,9 @@ export function PsychologistDetailPage() {
   const slots = profile ? profiles.listBookableSlots(profile.id) : [];
   const [selected, setSelected] = useState<string | null>(null);
   const selectedSlot = slots.find((s) => s.id === selected) ?? null;
+  const city = cityById(profile?.cityId);
+  const myCity = session.getLocation();
+  const distance = city && myCity ? distanceKm(myCity, city) : null;
   usePageTitle(profile?.professionalName ?? 'Profil není dostupný');
 
   if (!profile) {
@@ -49,14 +53,22 @@ export function PsychologistDetailPage() {
             <div className="min-w-0">
               <h1 className="font-display text-[2rem] font-extrabold leading-tight sm:text-4xl">{profile.professionalName}</h1>
               <p className="mt-0.5 font-semibold text-ink/70">{profile.professionalRole}</p>
-              <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-ink/70">
-                <Languages aria-hidden className="size-4" />
-                <span className="sr-only">Jazyky: </span>
-                {profile.languages.map(languageLabel).join(', ')}
+              <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-ink/70 sm:justify-start">
+                <span className="inline-flex items-center gap-1.5">
+                  <Languages aria-hidden className="size-4" />
+                  <span className="sr-only">Jazyky: </span>
+                  {profile.languages.map(languageLabel).join(', ')}
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-semibold text-ink/80">
+                  <MapPin aria-hidden className="size-4" />
+                  {city ? (profile.offersInPerson ? `${city.name} · online i osobně` : `${city.name} · jen online`) : 'Jen online'}
+                  {distance !== null && <span className="font-medium text-ink/60">({formatDistance(distance)} od tebe)</span>}
+                </span>
               </p>
             </div>
           </div>
           <ul className="mt-5 flex flex-wrap justify-center gap-2 sm:justify-start" aria-label="Zaměření">
+            {profile.worksWithYouth && <li className="rounded-full bg-ink px-3 py-1 text-sm font-semibold text-white">Pracuje s dospívajícími</li>}
             {profile.specializations.map((id) => (
               <li key={id} className="rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-ink">
                 {specializationLabel(id)}
@@ -71,7 +83,9 @@ export function PsychologistDetailPage() {
             <h2 id="slots-title" className="text-xl font-extrabold">
               Vyber si termín
             </h2>
-            <p className="mt-0.5 text-sm text-muted">Zdarma · online · český čas</p>
+            <p className="mt-0.5 text-sm text-muted">
+              Zdarma · český čas{profile.offersInPerson && city ? ` · termíny označené „osobně“ jsou v místě ${city.name}` : ' · online'}
+            </p>
             <div className="mt-4">
               {!profile.acceptingBookings ? (
                 <div className="flex items-start gap-2.5 rounded-2xl bg-amber-soft p-4 text-sm text-amber-ink">

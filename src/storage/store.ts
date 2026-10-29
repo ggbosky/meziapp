@@ -1,5 +1,6 @@
 import { ok, type Result } from '../domain/result';
 import type { DemoState } from '../domain/state';
+import { migrateState } from './migrations';
 import { validateDemoState } from './validate';
 
 /**
@@ -47,7 +48,15 @@ function isQuotaError(error: unknown): boolean {
 
 function safeParse(raw: string): unknown {
   try {
-    return JSON.parse(raw);
+    return migrateState(JSON.parse(raw)).data;
+  } catch {
+    return null;
+  }
+}
+
+function safeVersion(raw: string): unknown {
+  try {
+    return (JSON.parse(raw) as { schemaVersion?: unknown }).schemaVersion;
   } catch {
     return null;
   }
@@ -106,7 +115,7 @@ export class DemoStore {
     const fresh = this.options.seed(this.options.now());
     const currentUserId = this.snapshot.state.session.userId;
     if (currentUserId && fresh.users.some((u) => u.id === currentUserId)) {
-      fresh.session = { userId: currentUserId };
+      fresh.session = { ...fresh.session, userId: currentUserId };
     }
     const persistence = this.write(fresh);
     this.snapshot = { state: fresh, persistence, recoveredFromInvalid: false };
@@ -164,7 +173,9 @@ export class DemoStore {
       const validation = validateDemoState(safeParse(raw));
       if (validation.ok) {
         this.lastRaw = raw;
-        return { state: validation.state, persistence: 'ok', recoveredFromInvalid: false };
+        // Data převedená ze starší verze schématu rovnou uložíme v nové podobě.
+        const persistence = validation.state.schemaVersion !== safeVersion(raw) ? this.write(validation.state) : 'ok';
+        return { state: validation.state, persistence, recoveredFromInvalid: false };
       }
       const fresh = seed(now());
       return { state: fresh, persistence: this.write(fresh), recoveredFromInvalid: true };

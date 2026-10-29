@@ -2,7 +2,8 @@ import { CalendarCheck, CalendarClock, CalendarPlus, CircleCheck, Clock } from '
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
-import { JoinCallButton } from '../../components/booking/JoinCallDialog';
+import { MeetingButton } from '../../components/booking/JoinCallDialog';
+import { cityById, formatLabel } from '../../domain/places';
 import { usePageTitle } from '../../components/layout/usePageTitle';
 import { WeekSchedule } from '../../components/schedule/WeekSchedule';
 import { ButtonLink } from '../../components/ui/Button';
@@ -68,10 +69,10 @@ export function ProDashboard() {
               <p className="font-display text-2xl font-extrabold first-letter:uppercase">{formatDateTime(next.appointment.startsAt, now)}</p>
               <p className="mt-1 flex items-center gap-2 text-sm text-muted">
                 <Clock aria-hidden className="size-4" />
-                {formatTimeRange(next.appointment.startsAt, next.appointment.durationMinutes)} · klient {next.clientLabel}
+                {formatTimeRange(next.appointment.startsAt, next.appointment.durationMinutes)} · {formatLabel(next.appointment.format, profile.cityId)} · klient {next.clientLabel}
               </p>
             </div>
-            <JoinCallButton />
+            <MeetingButton format={next.appointment.format} cityName={cityById(profile.cityId)?.name ?? null} />
           </Card>
         ) : (
           <EmptyState title="Zatím nemáš žádnou rezervaci" icon={<CalendarCheck aria-hidden />}>

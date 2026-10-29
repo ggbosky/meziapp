@@ -2,7 +2,8 @@ import { ArrowLeft, CalendarDays, CalendarX2, CircleCheck, Clock, HandHeart, Mes
 import { useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAction, useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
-import { JoinCallButton } from '../../components/booking/JoinCallDialog';
+import { MeetingButton } from '../../components/booking/JoinCallDialog';
+import { cityById, formatLabel } from '../../domain/places';
 import { RequireRole } from '../../components/layout/RequireRole';
 import { usePageTitle } from '../../components/layout/usePageTitle';
 import { Alert } from '../../components/ui/Alert';
@@ -101,7 +102,7 @@ function AppointmentDetailContent({ view }: { view: ClientAppointmentView }) {
             {formatTimeRange(appointment.startsAt, appointment.durationMinutes)} ({appointment.durationMinutes} minut)
           </Detail>
           <Detail icon={<Video aria-hidden />} label="Forma">
-            Online videohovor (v prototypu simulovaný)
+            {formatLabel(appointment.format, profile.cityId)}{appointment.format === 'online' ? ' (v prototypu simulovaný)' : ''}
           </Detail>
           <Detail icon={<HandHeart aria-hidden />} label="Cena">
             Zdarma
@@ -121,7 +122,7 @@ function AppointmentDetailContent({ view }: { view: ClientAppointmentView }) {
             ) : (
               <span />
             )}
-            <JoinCallButton />
+            <MeetingButton format={appointment.format} cityName={cityById(profile.cityId)?.name ?? null} />
           </div>
         )}
         {error && (

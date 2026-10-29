@@ -6,7 +6,10 @@ import { usePageTitle } from '../../components/layout/usePageTitle';
 import { Alert } from '../../components/ui/Alert';
 import { Button, ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { ChipCheckboxGroup, TextArea, TextField } from '../../components/ui/Field';
+import { Checkbox, ChipCheckboxGroup, TextArea, TextField } from '../../components/ui/Field';
+import { CitySelect } from '../../components/location/CitySelect';
+import { appConfig } from '../../config/app';
+import { cityById } from '../../domain/places';
 import { PageHeader, SectionTitle } from '../../components/ui/PageHeader';
 import { ApplicationStatusBadge } from '../../components/ui/StatusBadge';
 import { useToast } from '../../components/ui/Toast';
@@ -25,6 +28,7 @@ const FIELD_LABELS: Record<string, string> = {
   languages: 'Jazyky',
   capacityPerMonth: 'Nabízená kapacita',
   bio: 'Profesní popis',
+  cityId: 'Město praxe',
 };
 
 export function ApplicationPage() {
@@ -105,6 +109,9 @@ function ApplicationForm({ application }: { application: PsychologistApplication
           languages: application.languages,
           capacityPerMonth: application.capacityPerMonth,
           bio: application.bio,
+          cityId: application.cityId,
+          offersInPerson: application.offersInPerson,
+          worksWithYouth: application.worksWithYouth,
         }
       : emptyApplicationFields(),
   );
@@ -240,6 +247,23 @@ function ApplicationForm({ application }: { application: PsychologistApplication
             required
           />
         </div>
+        <div className="space-y-3 rounded-2xl bg-canvas p-4">
+          <CitySelect
+            id="app-cityId"
+            label="Město praxe"
+            value={fields.cityId}
+            onChange={(v) => set('cityId', v)}
+            emptyLabel="Neuvádět (jen online)"
+            hint="Klientům ukážeme jen město a přibližnou vzdálenost, ne adresu."
+            error={errors.cityId}
+          />
+          <Checkbox checked={fields.offersInPerson} onChange={(v) => set('offersInPerson', v)} label="Můžu nabídnout i osobní setkání" />
+          <Checkbox
+            checked={fields.worksWithYouth}
+            onChange={(v) => set('worksWithYouth', v)}
+            label={`Pracuji i s dospívajícími (${appConfig.minimumAge}–${appConfig.adultAge - 1} let)`}
+          />
+        </div>
         <TextArea
           id="app-bio"
           label="Stručný profesní popis"
@@ -274,6 +298,8 @@ function ApplicationSummary({ application }: { application: PsychologistApplicat
     ['Jazyky', application.languages.map(languageLabel).join(', ')],
     ['Nabízená kapacita', `${countLabel(application.capacityPerMonth, 'konzultace', 'konzultace', 'konzultací')} měsíčně`],
     ['Profesní popis', application.bio],
+    ['Město a forma', `${cityById(application.cityId)?.name ?? 'Neuvedeno'} · ${application.offersInPerson ? 'online i osobně' : 'jen online'}`],
+    ['Dospívající klienti', application.worksWithYouth ? 'Ano' : 'Ne'],
   ];
   return (
     <div className="space-y-6">

@@ -50,7 +50,7 @@ describe('průchody aplikací', () => {
     expect(screen.getByText('Jde o simulaci')).toBeInTheDocument();
     const confirm = screen.getByRole('button', { name: 'Potvrdit rezervaci' });
     expect(confirm).toBeDisabled();
-    await user.click(screen.getByLabelText('Je mi alespoň 18 let.'));
+    await user.click(screen.getByLabelText('18 a víc'));
     await user.click(screen.getByLabelText('Beru na vědomí, že rezervace není akutní pomoc.'));
     await user.dblClick(confirm);
 
@@ -70,12 +70,13 @@ describe('průchody aplikací', () => {
     expect(services.profiles.listBookableSlots('p-alzbeta').some((s) => s.id === slotId)).toBe(true);
   });
 
-  it('dialog připojení k hovoru se zavře Escapem a vrátí focus', async () => {
+  it('dialog ke konzultaci se zavře Escapem a vrátí focus', async () => {
     const services = await servicesAs(DEMO_USER_IDS.clientA);
     const { user } = renderApp('/klient/rezervace/a-tereza-next', services);
-    const button = screen.getByRole('button', { name: 'Připojit se ke konzultaci' });
+    // Podle formy termínu jde o připojení k hovoru, nebo o informace k osobnímu setkání.
+    const button = screen.getByRole('button', { name: /Připojit se ke konzultaci|Kde se potkáme/ });
     await user.click(button);
-    expect(screen.getByRole('dialog', { name: 'Připojení ke konzultaci (ukázka)' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(button).toHaveFocus();

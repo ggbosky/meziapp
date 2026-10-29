@@ -1,4 +1,5 @@
 import { LANGUAGE_CODES, SPECIALIZATION_IDS } from './catalog';
+import { CITY_IDS } from './places';
 import type { ApplicationFields, LanguageCode, SpecializationId } from './types';
 
 export type FieldErrors = Record<string, string>;
@@ -66,6 +67,12 @@ export function validateApplicationFields(fields: ApplicationFields, mode: 'draf
     errors.languages = 'Vyber aspoň jeden jazyk.';
   }
 
+  if (fields.cityId !== null && !CITY_IDS.includes(fields.cityId)) {
+    errors.cityId = 'Vyber město ze seznamu.';
+  } else if (fields.offersInPerson && !fields.cityId) {
+    errors.cityId = 'Pro osobní setkání vyber město, kde konzultace nabízíš.';
+  }
+
   const capacity = fields.capacityPerMonth;
   if (!Number.isInteger(capacity) || capacity < L.capacity.min || capacity > L.capacity.max) {
     if (required || capacity !== 0) {
@@ -80,6 +87,9 @@ export interface ProfileEditInput {
   bio: string;
   specializations: SpecializationId[];
   languages: LanguageCode[];
+  cityId: string | null;
+  offersInPerson: boolean;
+  worksWithYouth: boolean;
 }
 
 export function validateProfileEdit(input: ProfileEditInput): FieldErrors {
@@ -93,6 +103,8 @@ export function validateProfileEdit(input: ProfileEditInput): FieldErrors {
     errors.specializations = `Vyber nejvýš ${APPLICATION_LIMITS.specializationsMax} zaměření.`;
   }
   if (input.languages.length === 0) errors.languages = 'Vyber aspoň jeden jazyk.';
+  if (input.cityId !== null && !CITY_IDS.includes(input.cityId)) errors.cityId = 'Vyber město ze seznamu.';
+  else if (input.offersInPerson && !input.cityId) errors.cityId = 'Pro osobní setkání vyber město, kde konzultace nabízíš.';
   return errors;
 }
 
@@ -105,5 +117,8 @@ export function emptyApplicationFields(): ApplicationFields {
     languages: ['cs'],
     capacityPerMonth: 4,
     bio: '',
+    cityId: null,
+    offersInPerson: false,
+    worksWithYouth: false,
   };
 }

@@ -8,6 +8,12 @@ export type ISODateTime = string;
 
 export type UserRole = 'client' | 'professional' | 'admin';
 
+/** Věková skupina klienta: dospělý (18+), nebo dospívající (15–17). */
+export type AgeGroup = 'adult' | 'youth';
+
+/** Forma konzultace. Osobně jen u odborníků, kteří osobní setkání nabízejí. */
+export type ConsultationFormat = 'online' | 'in_person';
+
 export interface User {
   id: string;
   role: UserRole;
@@ -16,6 +22,10 @@ export interface User {
   /** Krátký popis účtu pro výběr v demo režimu. */
   demoDescription: string;
   createdAt: ISODateTime;
+  /** Jen klienti: nejbližší větší město (bez adresy). */
+  homeCityId: string | null;
+  /** Jen klienti: věková skupina. */
+  ageGroup: AgeGroup | null;
 }
 
 export type SpecializationId =
@@ -41,6 +51,12 @@ export interface ApplicationFields {
   /** Kolik konzultací měsíčně odborník nabízí. */
   capacityPerMonth: number;
   bio: string;
+  /** Město praxe (nejbližší větší město). */
+  cityId: string | null;
+  /** Nabízí kromě online i osobní setkání. */
+  offersInPerson: boolean;
+  /** Pracuje i s dospívajícími (15–17 let). */
+  worksWithYouth: boolean;
 }
 
 export interface PsychologistApplication extends ApplicationFields {
@@ -70,6 +86,9 @@ export interface PsychologistProfile {
   specializations: SpecializationId[];
   languages: LanguageCode[];
   capacityPerMonth: number;
+  cityId: string | null;
+  offersInPerson: boolean;
+  worksWithYouth: boolean;
   /** Popis přístupu ke konzultacím. */
   approach: string;
   bio: string;
@@ -94,6 +113,7 @@ export interface AvailabilitySlot {
   profileId: string;
   startsAt: ISODateTime;
   durationMinutes: ConsultationDuration;
+  format: ConsultationFormat;
   status: SlotStatus;
   createdAt: ISODateTime;
   withdrawnAt: ISODateTime | null;
@@ -108,6 +128,7 @@ export interface Appointment {
   clientId: string;
   startsAt: ISODateTime;
   durationMinutes: ConsultationDuration;
+  format: ConsultationFormat;
   status: AppointmentStatus;
   createdAt: ISODateTime;
   cancelledAt: ISODateTime | null;
@@ -145,4 +166,6 @@ export interface AuditEvent {
 
 export interface DemoSession {
   userId: string | null;
+  /** Poloha nepřihlášeného návštěvníka (jen v tomto prohlížeči). */
+  cityId: string | null;
 }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEMO_USER_IDS } from '../../data/seed';
+import { appConfig } from '../../config/app';
+import { cityById, distanceKm } from '../../domain/places';
 import { addMinutes, localInputToISO } from '../../domain/time';
 import { createTestClock, createTestServices, MemoryStorage } from '../../test/helpers';
 import type { LocalServices } from './createLocalServices';
@@ -24,7 +26,8 @@ describe('výchozí data', () => {
   it('obsahují požadované demo účty, profily a žádosti', () => {
     const services = createTestServices();
     const state = services.store.getState();
-    expect(state.users.filter((u) => u.role === 'client')).toHaveLength(2);
+    expect(state.users.filter((u) => u.role === 'client' && u.ageGroup === 'adult')).toHaveLength(2);
+    expect(state.users.filter((u) => u.role === 'client' && u.ageGroup === 'youth')).toHaveLength(1);
     expect(state.profiles.filter((p) => p.status === 'active')).toHaveLength(5);
     expect(state.profiles.filter((p) => p.status === 'suspended')).toHaveLength(1);
     expect(state.applications.filter((a) => a.status === 'submitted')).toHaveLength(2);
@@ -129,8 +132,7 @@ describe('rezervace', () => {
     await signIn(services, 'u-hana');
     const added = await services.availability.addSlot({
       startsAt: addMinutes(new Date(terezaNext.startsAt), 20).toISOString(),
-      durationMinutes: 50,
-    });
+      durationMinutes: 50, format: 'online' });
     if (!added.ok) throw new Error(added.error.message);
     await signIn(services, DEMO_USER_IDS.clientA);
     const result = await services.appointments.book(added.value.id);
@@ -199,22 +201,21 @@ describe('správa dostupnosti', () => {
     const services = createTestServices();
     await signIn(services, DEMO_USER_IDS.psychologistB);
     const start = localInputToISO('2026-11-20', '15:00')!;
-    expect((await services.availability.addSlot({ startsAt: start, durationMinutes: 50 })).ok).toBe(true);
-    const overlap = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '15:30')!, durationMinutes: 30 });
+    expect((await services.availability.addSlot({ startsAt: start, durationMinutes: 50, format: 'online' })).ok).toBe(true);
+    const overlap = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '15:30')!, durationMinutes: 30, format: 'online' });
     expect(!overlap.ok && overlap.error.code).toBe('SLOT_OVERLAP');
-    const next = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '15:50')!, durationMinutes: 30 });
+    const next = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '15:50')!, durationMinutes: 30, format: 'online' });
     expect(next.ok).toBe(true);
   });
 
   it('odmítne termín v minulosti a neplatnou délku', async () => {
     const services = createTestServices();
     await signIn(services, DEMO_USER_IDS.psychologistB);
-    const past = await services.availability.addSlot({ startsAt: localInputToISO('2026-10-20', '10:00')!, durationMinutes: 50 });
+    const past = await services.availability.addSlot({ startsAt: localInputToISO('2026-10-20', '10:00')!, durationMinutes: 50, format: 'online' });
     expect(!past.ok && past.error.code).toBe('SLOT_IN_PAST');
     const invalid = await services.availability.addSlot({
       startsAt: localInputToISO('2026-11-20', '10:00')!,
-      durationMinutes: 45 as 50,
-    });
+      durationMinutes: 45 as 50, format: 'online' });
     expect(invalid.ok).toBe(false);
   });
 
@@ -233,7 +234,7 @@ describe('přihlášky a schvalování', () => {
     const services = createTestServices();
     await signIn(services, DEMO_USER_IDS.applicantPending);
     expect(services.profiles.getOwnStatus()?.kind).toBe('application');
-    const added = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '10:00')!, durationMinutes: 50 });
+    const added = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '10:00')!, durationMinutes: 50, format: 'online' });
     expect(!added.ok && added.error.code).toBe('NOT_APPROVED');
     expect(services.availability.listOwn()).toEqual([]);
     expect(services.appointments.listForMyPractice()).toEqual([]);
@@ -248,7 +249,7 @@ describe('přihlášky a schvalování', () => {
 
     await signIn(services, DEMO_USER_IDS.applicantPending);
     expect(services.profiles.getOwnStatus()?.kind).toBe('approved');
-    const added = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '10:00')!, durationMinutes: 50 });
+    const added = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '10:00')!, durationMinutes: 50, format: 'online' });
     expect(added.ok).toBe(true);
     const profileId = result.ok ? result.value.id : '';
     expect(services.profiles.listPublic().some((p) => p.profile.id === profileId)).toBe(true);
@@ -266,6 +267,9 @@ describe('přihlášky a schvalování', () => {
       languages: ['cs' as const],
       capacityPerMonth: 4,
       bio: 'Fiktivní profesní popis pro test, který má dost znaků.',
+      cityId: 'brno',
+      offersInPerson: true,
+      worksWithYouth: false,
     };
     const draft = await services.applications.saveDraft({ ...fields, bio: '' });
     expect(draft.ok && draft.value.status).toBe('draft');
@@ -362,5 +366,89 @@ describe('ukládání a obnovení', () => {
     expect(services.store.getState().appointments.some((a) => a.slotId === slot.id && a.clientId === DEMO_USER_IDS.clientB)).toBe(false);
     expect(services.session.getCurrentUser()?.id).toBe(DEMO_USER_IDS.clientB);
     expect(createTestServices(storage).profiles.listBookableSlots('p-hana').some((s) => s.id === slot.id)).toBe(true);
+  });
+});
+
+describe('poloha a okolí', () => {
+  it('vzdálenost mezi městy odpovídá skutečnosti přibližně', () => {
+    const km = distanceKm(cityById('praha')!, cityById('brno')!);
+    expect(km).toBeGreaterThan(170);
+    expect(km).toBeLessThan(200);
+    expect(distanceKm(cityById('praha')!, cityById('praha')!)).toBe(0);
+  });
+
+  it('klientovi se poloha uloží do účtu a seznam ukáže vzdálenost', async () => {
+    const services = createTestServices();
+    await signIn(services, DEMO_USER_IDS.clientB);
+    expect(services.session.getLocation()).toBeNull();
+    expect((await services.session.setLocation('kladno')).ok).toBe(true);
+    expect(services.store.getState().users.find((u) => u.id === DEMO_USER_IDS.clientB)?.homeCityId).toBe('kladno');
+    const list = services.profiles.listPublic({ nearCityId: 'kladno', sort: 'distance' });
+    expect(list[0]?.city?.id).toBe('praha');
+    expect(list[0]!.distanceKm!).toBeLessThan(appConfig.location.nearbyRadiusKm);
+    const sorted = list.map((i) => i.distanceKm ?? Infinity);
+    expect([...sorted].sort((a, b) => a - b)).toEqual(sorted);
+  });
+
+  it('nepřihlášenému se poloha uloží jen do prohlížeče', async () => {
+    const services = createTestServices();
+    expect((await services.session.setLocation('brno')).ok).toBe(true);
+    expect(services.session.getLocation()?.name).toBe('Brno');
+    expect((await services.session.setLocation('neexistuje')).ok).toBe(false);
+  });
+
+  it('filtr osobních konzultací vrátí jen odborníky s osobním setkáním', () => {
+    const services = createTestServices();
+    const list = services.profiles.listPublic({ inPersonOnly: true });
+    expect(list.length).toBeGreaterThan(0);
+    expect(list.every((i) => i.profile.offersInPerson && i.city)).toBe(true);
+    expect(list.some((i) => i.profile.id === 'p-daniel')).toBe(false);
+  });
+
+  it('osobní termín může vypsat jen odborník s městem a osobním setkáním', async () => {
+    const services = createTestServices();
+    await signIn(services, 'u-daniel');
+    const denied = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '10:00')!, durationMinutes: 50, format: 'in_person' });
+    expect(denied.ok).toBe(false);
+    await signIn(services, DEMO_USER_IDS.psychologistA);
+    const allowed = await services.availability.addSlot({ startsAt: localInputToISO('2026-11-20', '10:00')!, durationMinutes: 50, format: 'in_person' });
+    expect(allowed.ok && allowed.value.format).toBe('in_person');
+  });
+
+  it('rezervace převezme formu termínu', async () => {
+    const services = createTestServices();
+    await signIn(services, DEMO_USER_IDS.clientB);
+    const slot = services.profiles.listBookableSlots('p-hana').find((s) => s.format === 'in_person') ?? services.profiles.listBookableSlots('p-marta').find((s) => s.format === 'in_person');
+    expect(slot).toBeDefined();
+    const booked = await services.appointments.book(slot!.id);
+    expect(booked.ok && booked.value.format).toBe('in_person');
+  });
+});
+
+describe('dospívající klienti', () => {
+  it('dospívající si nemůže rezervovat odborníka, který s dospívajícími nepracuje', async () => {
+    const services = createTestServices();
+    await signIn(services, DEMO_USER_IDS.clientYouth);
+    const result = await services.appointments.book(firstOpenSlot(services, 'p-hana').id);
+    expect(!result.ok && result.error.code).toBe('NOT_FOR_YOUTH');
+    expect((await services.appointments.book(firstOpenSlot(services, 'p-marta').id)).ok).toBe(true);
+  });
+
+  it('filtr pro dospívající ukáže jen odborníky, kteří s nimi pracují', () => {
+    const services = createTestServices();
+    const list = services.profiles.listPublic({ youthOnly: true });
+    expect(list.length).toBeGreaterThan(0);
+    expect(list.every((i) => i.profile.worksWithYouth)).toBe(true);
+  });
+
+  it('věková skupina potvrzená při rezervaci se uloží do účtu', async () => {
+    const services = createTestServices();
+    await signIn(services, DEMO_USER_IDS.clientB);
+    const result = await services.appointments.book(firstOpenSlot(services, 'p-hana').id, { ageGroup: 'youth' });
+    expect(!result.ok && result.error.code).toBe('NOT_FOR_YOUTH');
+    // Neúspěšná rezervace nic nezapsala, ani změnu věku.
+    expect(services.session.getCurrentUser()?.ageGroup).toBe('adult');
+    expect((await services.appointments.book(firstOpenSlot(services, 'p-marta').id, { ageGroup: 'youth' })).ok).toBe(true);
+    expect(services.session.getCurrentUser()?.ageGroup).toBe('youth');
   });
 });

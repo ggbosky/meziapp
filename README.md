@@ -4,7 +4,7 @@ Prototyp neziskové aplikace pro objednávání **bezplatných konzultací u psy
 
 > **Jde výhradně o DEMONSTRAČNÍ PROTOTYP.** Všechny osoby, kvalifikace, termíny, rezervace i výsledky schvalování jsou fiktivní. Aplikace nemá backend, neposílá e-maily, nezakládá videohovory a nesbírá analytická data.
 
-Principy služby: všechny konzultace jsou zdarma, bez předplatného, kreditů, reklam a placeného předbíhání. Pro všechny platí stejné podmínky, odborníci prochází ručním schválením a kapacita je omezená. Služba neslibuje léčbu ani nepřetržitou dostupnost, nenahrazuje akutní pomoc a první verze je určená lidem od 18 let.
+Principy služby: všechny konzultace jsou zdarma, bez předplatného, kreditů, reklam a placeného předbíhání. Pro všechny platí stejné podmínky, odborníci prochází ručním schválením a kapacita je omezená. Služba neslibuje léčbu ani nepřetržitou dostupnost a nenahrazuje akutní pomoc. Je určená lidem od 15 let: dospívající (15–17) vidí jen odborníky označené „Pracuje s dospívajícími“ (hranice jsou v `src/config/app.ts`).
 
 ## Technologie
 
@@ -37,8 +37,9 @@ Na stránce **Vyzkoušet aplikaci** (`#/vyzkouset`) se vstupuje do fiktivních �
 
 | Role | Účet | Co ukazuje |
 | --- | --- | --- |
-| Klient | Tereza Malá | jedna naplánovaná konzultace, proběhlé konzultace (jedna čeká na zpětnou vazbu), zrušená rezervace |
-| Klient | Ondřej Král | naplánovaná konzultace, konzultace zrušená odborníkem |
+| Klient | Tereza Malá | poloha Kladno (vidí psychology v okolí), jedna naplánovaná konzultace, proběhlé konzultace (jedna čeká na zpětnou vazbu), zrušená rezervace |
+| Klient | Ondřej Král | naplánovaná konzultace, konzultace zrušená odborníkem, bez zadané polohy |
+| Klient (16 let) | Ema Svobodová | dospívající klientka z Brna, vidí jen odborníky pro dospívající |
 | Schválený psycholog | Alžběta Krejčí | vypsané termíny, rezervace, týdenní rozvrh |
 | Schválený psycholog | Vojtěch Pokorný | večerní termíny, jedna rezervace |
 | Žadatel | Kateřina Holubová | odeslaná přihláška čekající na posouzení |
@@ -61,6 +62,13 @@ Vstup do demo účtů je nástroj prototypu, ne přihlášení. Simulovaná opr�
 6. Jako **administrátor** přihlášku schval, vyžádej doplnění nebo zamítni a pozastav některý profil. Změny uvidíš v *Historii změn*.
 7. Vrať se k žadateli: po schválení vidí přehled psychologa a může vypisovat termíny.
 8. Tlačítkem **Obnovit demo** vrátíš výchozí stav.
+
+## Poloha, osobní setkání a dospívající
+
+- Klient může zadat nejbližší větší město (bez adresy). Přihlášenému klientovi se uloží k účtu, nepřihlášenému jen do prohlížeče. Seznam psychologů pak ukáže sekci „Ve tvém okolí“ (do 50 km vzdušnou čarou mezi středy měst, nastavitelné v konfiguraci) a u každého odborníka přibližnou vzdálenost.
+- Odborník uvádí město praxe a jestli nabízí osobní setkání. U každého termínu volí formu: online, nebo osobně. Rezervace formu převezme; u osobního termínu se místo připojení k hovoru ukáže informace o setkání (adresa se v prototypu nesděluje).
+- Klient při rezervaci uvede věkovou skupinu (18+, nebo 15–17). Dospívající si mohou rezervovat jen odborníky, kteří s dospívajícími pracují; pravidlo hlídá i datová vrstva.
+- Seznam měst je v `src/domain/places.ts`.
 
 ## Ukládání a resetování dat
 
@@ -101,7 +109,7 @@ BASE_PATH=/meziapp/ npm run build
 - Neodesílají se e-maily ani oznámení, nevznikají videohovory a aplikace nepřistupuje k mikrofonu ani kameře.
 - Kvalifikace odborníků se neověřuje a nenahrávají se doklady.
 - Statistiky v administraci se počítají z demo dat a záměrně neobsahují žádné metriky psychického stavu nebo zlepšení. Zpětná vazba se ptá jen na srozumitelnost průběhu služby a není důkazem účinnosti.
-- Seznam krizových kontaktů je záměrně prázdný (`appConfig.urgentHelp.verifiedContacts`). Prototyp uvádí jen obecné číslo tísňového volání 112.
+- Krizové kontakty (112, 155, Linka bezpečí 116 111, Linka první psychické pomoci 116 123, Linka pro rodinu a školu 116 000, Rodičovská linka 606 021 021, linka pro oběti trestných činů a domácího násilí 116 006) jsou ověřené podle veřejných zdrojů k datu uvedenému v `src/config/app.ts`. Před spuštěním je musí potvrdit odborný garant.
 
 ## Co bude potřeba před skutečným provozem
 
@@ -109,7 +117,8 @@ BASE_PATH=/meziapp/ npm run build
 - Transakční rezervace (například unikátní omezení na aktivní rezervaci termínu) a ochrana proti souběhu.
 - Právní posouzení zpracování osobních údajů (GDPR), podmínky služby, zásady ochrany soukromí a smlouvy s odborníky.
 - Odborný garant, ověřování kvalifikace odborníků a proces vyřizování stížností.
-- **Odborně ověřené krizové kontakty** doplněné do `src/config/app.ts` a jasný postup pro akutní situace.
+- Potvrzení krizových kontaktů odborným garantem a jasný postup pro akutní situace.
+- **Právní posouzení konzultací s nezletilými (15–17 let):** souhlas zákonných zástupců, mlčenlivost a ověření věku.
 - Zabezpečené videohovory, e-mailová oznámení (potvrzení, připomenutí, zrušení) a správa souhlasů.
 - Testy přístupnosti s uživateli, bezpečnostní audit, monitoring provozu bez sledování uživatelů.
 

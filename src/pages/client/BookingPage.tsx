@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, CalendarDays, CircleCheck, Clock, FlaskConical, HandHeart, ShieldCheck, UserX, Video } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CalendarDays, CircleCheck, Clock, FlaskConical, HandHeart, ShieldCheck, UserX, Video, MapPin } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAction, useCurrentUser, useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
@@ -10,12 +10,13 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Button, ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { Checkbox } from '../../components/ui/Field';
+import { Checkbox, RadioCardGroup } from '../../components/ui/Field';
 import { Stepper } from '../../components/ui/Stepper';
 import { appConfig } from '../../config/app';
 import type { DomainError } from '../../domain/result';
 import { formatDayLong, formatTimeRange } from '../../domain/time';
-import type { AvailabilitySlot } from '../../domain/types';
+import { cityById } from '../../domain/places';
+import type { AgeGroup, AvailabilitySlot } from '../../domain/types';
 
 const STEPS = ['Termín', 'Souhrn', 'Potvrzení', 'Hotovo'];
 
@@ -45,7 +46,7 @@ function BookingFlow() {
   const slot = lockedSlot.current ?? slots.find((s) => s.id === requested) ?? null;
 
   const [step, setStep] = useState(slot ? 1 : 0);
-  const [adult, setAdult] = useState(false);
+  const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(user?.ageGroup ?? null);
   const [understands, setUnderstands] = useState(false);
   const [error, setError] = useState<DomainError | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -85,7 +86,7 @@ function BookingFlow() {
     if (!slot) return;
     setError(null);
     lockedSlot.current = slot;
-    const result = await book(slot.id);
+    const result = await book(slot.id, ageGroup ? { ageGroup } : {});
     if (!result) return;
     if (result.ok) {
       navigate(`/klient/rezervace/${result.value.id}/potvrzeno`, { replace: true });
@@ -154,7 +155,11 @@ function BookingFlow() {
             {[
               { icon: <CalendarDays aria-hidden />, label: 'Datum', value: <span className="first-letter:uppercase">{formatDayLong(slot.startsAt)}</span> },
               { icon: <Clock aria-hidden />, label: 'Čas', value: `${formatTimeRange(slot.startsAt, slot.durationMinutes)} (${slot.durationMinutes} minut)` },
-              { icon: <Video aria-hidden />, label: 'Forma', value: 'Online videohovor' },
+              {
+                icon: slot.format === 'in_person' ? <MapPin aria-hidden /> : <Video aria-hidden />,
+                label: 'Forma',
+                value: slot.format === 'in_person' ? `Osobně · ${cityById(profile.cityId)?.name ?? ''}` : 'Online videohovor',
+              },
               { icon: <HandHeart aria-hidden />, label: 'Cena', value: 'Zdarma' },
             ].map((item) => (
               <div key={item.label} className="flex items-start gap-3 rounded-2xl bg-canvas p-4">
@@ -203,7 +208,30 @@ function BookingFlow() {
               se neuskuteční.
             </Alert>
             <div className="space-y-3 rounded-2xl bg-canvas p-4">
-              <Checkbox checked={adult} onChange={setAdult} label={`Je mi alespoň ${appConfig.minimumAge} let.`} />
+              <RadioCardGroup
+                legend="Kolik ti je let?"
+                name="age-group"
+                value={ageGroup}
+                onChange={(v) => setAgeGroup(v)}
+                options={[
+                  { value: 'adult', label: `${appConfig.adultAge} a víc` },
+                  { value: 'youth', label: `${appConfig.minimumAge} až ${appConfig.adultAge - 1}` },
+                ]}
+              />
+              {ageGroup === 'youth' && (
+                <div className="rounded-2xl bg-sun-soft p-4 text-sm leading-relaxed text-ink/85">
+                  <p className="font-bold text-ink">Je fajn, že ses rozhodl(a) si o tom s někým promluvit.</p>
+                  <p className="mt-1">
+                    {profile.worksWithYouth
+                      ? 'Tenhle odborník pracuje s dospívajícími. Na začátku ti vysvětlí, co zůstane jen mezi vámi a kdy by bylo potřeba zapojit rodiče nebo jiného dospělého.'
+                      : 'Tenhle odborník zatím s dospívajícími nepracuje. Vyber si prosím někoho s označením „Pracuje s dospívajícími“.'}
+                  </p>
+                  <p className="mt-1 text-ink/70">
+                    Pravidla pro souhlas rodičů se před spuštěním služby ověří s právníky. Potřebuješ si promluvit hned a anonymně? Linka bezpečí 116 111 je
+                    nonstop a zdarma.
+                  </p>
+                </div>
+              )}
               <Checkbox
                 checked={understands}
                 onChange={setUnderstands}
@@ -225,6 +253,10 @@ function BookingFlow() {
                     <Button size="sm" variant="secondary" onClick={() => setStep(0)}>
                       Vybrat jiný termín
                     </Button>
+                  ) : error.code === 'NOT_FOR_YOUTH' ? (
+                    <ButtonLink size="sm" variant="secondary" to="/psychologove?mladi=1">
+                      Psychologové pro dospívající
+                    </ButtonLink>
                   ) : error.code === 'BOOKING_LIMIT' ? (
                     <ButtonLink size="sm" variant="secondary" to="/klient">
                       Moje konzultace
@@ -243,13 +275,13 @@ function BookingFlow() {
                 type="submit"
                 size="lg"
                 loading={booking}
-                disabled={!adult || !understands}
+                disabled={!ageGroup || !understands}
                 icon={<CircleCheck aria-hidden className="size-5" />}
               >
                 Potvrdit rezervaci
               </Button>
             </div>
-            {(!adult || !understands) && <p className="text-right text-xs text-muted">Pro potvrzení zaškrtni obě políčka.</p>}
+            {(!ageGroup || !understands) && <p className="text-right text-xs text-muted">Pro potvrzení vyber věk a zaškrtni políčko.</p>}
           </form>
         )}
       </Card>

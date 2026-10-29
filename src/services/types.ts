@@ -1,12 +1,15 @@
 import type { Result } from '../domain/result';
 import type { SlotState } from '../domain/rules';
+import type { City } from '../domain/places';
 import type {
+  AgeGroup,
   ApplicationFields,
   Appointment,
   AppointmentStatus,
   AuditEvent,
   AvailabilitySlot,
   ConsultationDuration,
+  ConsultationFormat,
   Feedback,
   ISODateTime,
   LanguageCode,
@@ -36,9 +39,13 @@ export interface PublicProfileSummary {
   profile: PsychologistProfile;
   nextSlot: AvailabilitySlot | null;
   openSlotCount: number;
+  /** Město praxe. */
+  city: City | null;
+  /** Vzdálenost od zadané polohy, pokud je známá. */
+  distanceKm: number | null;
 }
 
-export type CatalogSort = 'soonest' | 'name';
+export type CatalogSort = 'soonest' | 'name' | 'distance';
 
 export interface CatalogQuery {
   specialization?: SpecializationId | null;
@@ -46,6 +53,12 @@ export interface CatalogQuery {
   /** Jen odborníci s volným termínem do N dní. */
   availableWithinDays?: number | null;
   sort?: CatalogSort;
+  /** Poloha, od které se počítá vzdálenost. */
+  nearCityId?: string | null;
+  /** Jen odborníci, kteří nabízejí osobní setkání. */
+  inPersonOnly?: boolean;
+  /** Jen odborníci, kteří pracují s dospívajícími. */
+  youthOnly?: boolean;
 }
 
 export interface ClientAppointmentView {
@@ -113,6 +126,12 @@ export interface FeedbackInput {
 export interface NewSlotInput {
   startsAt: ISODateTime;
   durationMinutes: ConsultationDuration;
+  format: ConsultationFormat;
+}
+
+export interface BookingOptions {
+  /** Věková skupina, kterou klient potvrdil při rezervaci. */
+  ageGroup?: AgeGroup;
 }
 
 // ——— Služby ———
@@ -122,6 +141,9 @@ export interface SessionService {
   listDemoAccounts(): User[];
   signInAs(userId: string): Promise<Result<User>>;
   signOut(): Promise<void>;
+  /** Poloha aktuálního návštěvníka: u klienta z účtu, jinak z prohlížeče. */
+  getLocation(): City | null;
+  setLocation(cityId: string | null): Promise<Result<City | null>>;
 }
 
 export interface ProfileService {
@@ -148,7 +170,7 @@ export interface AvailabilityService {
 }
 
 export interface AppointmentService {
-  book(slotId: string): Promise<Result<Appointment>>;
+  book(slotId: string, options?: BookingOptions): Promise<Result<Appointment>>;
   cancelAsClient(appointmentId: string): Promise<Result<Appointment>>;
   cancelAsPsychologist(appointmentId: string): Promise<Result<Appointment>>;
   listMine(): ClientAppointmentView[];

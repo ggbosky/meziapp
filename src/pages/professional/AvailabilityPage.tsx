@@ -16,7 +16,8 @@ import { PageHeader, SectionTitle } from '../../components/ui/PageHeader';
 import { useToast } from '../../components/ui/Toast';
 import { appConfig } from '../../config/app';
 import { addDaysToKey, dateKey, formatDateTime, formatDayLong, formatTimeRange, localInputToISO } from '../../domain/time';
-import type { ConsultationDuration } from '../../domain/types';
+import { cityById } from '../../domain/places';
+import type { ConsultationDuration, ConsultationFormat } from '../../domain/types';
 import type { OwnSlotView } from '../../services/types';
 import { ApprovedOnly } from './ProfessionalLayout';
 import { CancelBookedDialog } from './CancelBookedDialog';
@@ -38,6 +39,12 @@ function AddSlotForm({ disabled }: { disabled: boolean }) {
   const [date, setDate] = useState(addDaysToKey(today, 1));
   const [time, setTime] = useState('16:00');
   const [duration, setDuration] = useState<ConsultationDuration>(50);
+  const [format, setFormat] = useState<ConsultationFormat>('online');
+  const { profiles } = useServices();
+  const status = profiles.getOwnStatus();
+  const profile = status?.kind === 'approved' ? status.profile : null;
+  const city = cityById(profile?.cityId);
+  const canMeet = Boolean(profile?.offersInPerson && city);
   const [errors, setErrors] = useState<{ date?: string; time?: string; form?: string }>({});
   const [add, pending] = useAction(availability.addSlot);
 
@@ -54,7 +61,7 @@ function AddSlotForm({ disabled }: { disabled: boolean }) {
         if (!next.date && !next.time && !startsAt) next.form = 'Datum nebo čas nemá platný formát.';
         setErrors(next);
         if (Object.keys(next).length > 0 || !startsAt) return;
-        const result = await add({ startsAt, durationMinutes: duration });
+        const result = await add({ startsAt, durationMinutes: duration, format });
         if (!result) return;
         if (result.ok) {
           toast(`Termín přidán: ${formatDateTime(result.value.startsAt)} (${result.value.durationMinutes} min).`);
@@ -98,6 +105,17 @@ function AddSlotForm({ disabled }: { disabled: boolean }) {
           { value: '50', label: '50 minut', description: 'Běžná délka konzultace' },
         ]}
       />
+      <RadioCardGroup
+        legend="Forma"
+        name="format"
+        value={format}
+        onChange={(v) => setFormat(v)}
+        options={[
+          { value: 'online', label: 'Online', description: 'Videohovor' },
+          ...(canMeet ? [{ value: 'in_person' as const, label: 'Osobně', description: `Ve městě ${city?.name ?? ''}` }] : []),
+        ]}
+        hint={canMeet ? undefined : 'Osobní termíny zapneš v profilu: vyplň město praxe a zaškrtni osobní setkání.'}
+      />
       {errors.form && (
         <Alert tone="error" live>
           {errors.form}
@@ -120,7 +138,8 @@ function SlotList({ items, now, onWithdraw, onCancelBooked }: { items: OwnSlotVi
             <div className="min-w-0">
               <p className="font-medium first-letter:uppercase">{formatDayLong(view.slot.startsAt)}</p>
               <p className="text-sm text-muted">
-                {formatTimeRange(view.slot.startsAt, view.slot.durationMinutes)} · {view.slot.durationMinutes} minut
+                {formatTimeRange(view.slot.startsAt, view.slot.durationMinutes)} · {view.slot.durationMinutes} minut ·{' '}
+                {view.slot.format === 'in_person' ? 'osobně' : 'online'}
                 {view.clientLabel && view.state !== 'open' ? ` · klient ${view.clientLabel}` : ''}
               </p>
               <div className="mt-1.5">

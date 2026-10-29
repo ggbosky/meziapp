@@ -29,6 +29,7 @@ const GROUPS: RoleGroup[] = [
     accounts: [
       { id: DEMO_USER_IDS.clientA, target: '/klient', label: 'Klientka' },
       { id: DEMO_USER_IDS.clientB, target: '/klient', label: 'Klient' },
+      { id: DEMO_USER_IDS.clientYouth, target: '/klient', label: 'Dospívající (16 let)' },
     ],
   },
   {

@@ -13,6 +13,7 @@ import { ProfileStatusBadge } from '../../components/ui/StatusBadge';
 import { useToast } from '../../components/ui/Toast';
 import { fail } from '../../domain/result';
 import { countLabel } from '../../domain/text';
+import { cityById } from '../../domain/places';
 import { formatDate } from '../../domain/time';
 import type { PsychologistProfile } from '../../domain/types';
 import { ReasonDialog } from './ReasonDialog';
@@ -47,7 +48,8 @@ export function ProfilesPage() {
                   <div className="min-w-0">
                     <p className="font-medium">{profile.professionalName}</p>
                     <p className="text-sm text-muted">
-                      {profile.professionalRole} · schváleno {formatDate(profile.approvedAt)}
+                      {profile.professionalRole} · {cityById(profile.cityId)?.name ?? 'jen online'}
+                      {profile.worksWithYouth ? ' · i dospívající' : ''} · schváleno {formatDate(profile.approvedAt)}
                     </p>
                   </div>
                 </div>

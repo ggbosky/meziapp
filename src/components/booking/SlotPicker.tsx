@@ -73,7 +73,7 @@ export function SlotPicker({
               <span className="font-normal text-muted"> · {formatDayLong(daySlots[0]!.startsAt)}</span>
             )}
           </legend>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:grid-cols-3">
             {daySlots.map((slot) => {
               const checked = value === slot.id;
               return (
@@ -87,7 +87,7 @@ export function SlotPicker({
                   <input type="radio" name="slot-time" value={slot.id} checked={checked} onChange={() => onChange(slot.id)} className="sr-only" />
                   <span className="font-round text-lg font-extrabold tabular-nums">{formatTime(slot.startsAt)}</span>
                   <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', checked ? 'bg-brand-800 text-white' : 'bg-sage-50 text-muted')}>
-                    {slot.durationMinutes} min
+                    {slot.durationMinutes} min{slot.format === 'in_person' ? ' · osobně' : ''}
                   </span>
                 </label>
               );

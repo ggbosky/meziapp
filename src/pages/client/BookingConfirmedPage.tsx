@@ -1,5 +1,6 @@
 import { CalendarX2 } from 'lucide-react';
 import { CelebrateIllustration } from '../../components/ui/Illustrations';
+import { formatLabel } from '../../domain/places';
 import { useParams } from 'react-router-dom';
 import { useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
 import { RequireRole } from '../../components/layout/RequireRole';
@@ -49,7 +50,7 @@ function Confirmed() {
           <p className="mt-3 text-sm text-muted">Kdy</p>
           <p className="font-semibold first-letter:uppercase">{formatDateTime(appointment.startsAt, now)}</p>
           <p className="text-sm text-muted">
-            {formatTimeRange(appointment.startsAt, appointment.durationMinutes)} · {appointment.durationMinutes} minut · online · zdarma
+            {formatTimeRange(appointment.startsAt, appointment.durationMinutes)} · {appointment.durationMinutes} minut · {formatLabel(appointment.format, profile.cityId).toLowerCase()} · zdarma
           </p>
         </div>
         <div className="mx-auto mt-6 max-w-md text-left">

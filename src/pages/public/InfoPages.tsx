@@ -1,66 +1,97 @@
-import { CalendarClock, CircleSlash, Database, FileCheck2, HandHeart, Phone, PhoneCall, ShieldAlert, SlidersHorizontal, UserCheck } from 'lucide-react';
+import { CalendarClock, CircleSlash, Database, ExternalLink, FileCheck2, HandHeart, Phone, PhoneCall, ShieldAlert, SlidersHorizontal, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDemoSnapshot, useServices } from '../../app/AppContext';
 import { ResetDemoButton } from '../../components/layout/ResetDemoButton';
 import { usePageTitle } from '../../components/layout/usePageTitle';
-import { Alert } from '../../components/ui/Alert';
 import { Button, ButtonLink, buttonClasses } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { appConfig } from '../../config/app';
+import { appConfig, type UrgentAudience } from '../../config/app';
 import { DEMO_USER_IDS } from '../../data/seed';
 import { formatTimestamp } from '../../domain/time';
 
+const AUDIENCE_TITLES: Record<UrgentAudience, string> = {
+  everyone: 'Pro všechny',
+  youth: 'Pro děti, dospívající a studenty',
+  adults: 'Pro dospělé',
+  parents: 'Pro rodiče a blízké',
+  violence: 'Při násilí',
+};
+const AUDIENCE_ORDER: UrgentAudience[] = ['everyone', 'youth', 'adults', 'parents', 'violence'];
+
 export function UrgentHelpPage() {
   usePageTitle('Naléhavá pomoc');
-  const { emergencyNumber, verifiedContacts } = appConfig.urgentHelp;
+  const { emergencyNumber, verifiedContacts, contactsCheckedAt } = appConfig.urgentHelp;
+  const groups = AUDIENCE_ORDER.map((audience) => ({ audience, items: verifiedContacts.filter((c) => c.audience === audience) })).filter(
+    (g) => g.items.length > 0,
+  );
   return (
-    <div className="container-page max-w-3xl py-10 sm:py-14">
-      <PageHeader title="Naléhavá pomoc" description="Tahle služba není určená pro akutní situace." />
-      <div className="mt-8 space-y-6">
-        <div className="rounded-[var(--radius-card)] border-2 border-danger-line bg-danger-soft p-6">
-          <h2 className="flex items-center gap-2 text-xl font-semibold text-danger-strong">
+    <div className="container-page max-w-3xl py-6 sm:py-10">
+      <PageHeader title="Naléhavá pomoc" description="Tahle služba není určená pro akutní situace. Tady najdeš, kam se obrátit hned." />
+      <div className="mt-6 space-y-6">
+        <div className="rounded-[var(--radius-card)] bg-danger-soft p-6">
+          <h2 className="flex items-center gap-2 text-xl font-extrabold text-danger-strong">
             <ShieldAlert aria-hidden className="size-6" /> Při bezprostředním ohrožení života
           </h2>
           <p className="mt-3 leading-relaxed text-ink">
-            Volej <a href={`tel:${emergencyNumber}`} className="font-semibold text-danger-strong underline underline-offset-2">{emergencyNumber}</a> (jednotné evropské číslo tísňového volání), nebo jdi na nejbližší pohotovost.
+            Volej <strong className="font-bold text-danger-strong">{emergencyNumber}</strong> (jednotné evropské číslo tísňového volání), nebo jdi na
+            nejbližší pohotovost.
           </p>
-          <a href={`tel:${emergencyNumber}`} className={buttonClasses('danger', 'lg', 'mt-5')}>
+          <a href={`tel:${emergencyNumber}`} className={buttonClasses('danger', 'lg', 'mt-5 w-full sm:w-auto')}>
             <PhoneCall aria-hidden className="size-5" />
             Volat {emergencyNumber}
           </a>
         </div>
 
+        <section aria-labelledby="contacts-title">
+          <h2 id="contacts-title" className="flex items-center gap-2 text-xl font-extrabold">
+            <Phone aria-hidden className="size-5 text-brand-700" /> Krizové linky a další pomoc
+          </h2>
+          <p className="mt-1 text-sm text-muted">Všechny linky níže jsou zdarma. Pokud nemůžeš mluvit, některé nabízejí i chat.</p>
+          <div className="mt-4 space-y-5">
+            {groups.map((group) => (
+              <div key={group.audience}>
+                <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted">{AUDIENCE_TITLES[group.audience]}</h3>
+                <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] bg-surface shadow-soft">
+                  {group.items.map((c) => (
+                    <li key={c.name} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold">{c.name}</p>
+                        <p className="mt-0.5 text-sm leading-relaxed text-muted">{c.description}</p>
+                        {c.web && (
+                          <a href={c.web.href} target="_blank" rel="noreferrer" className="link mt-1.5 inline-flex items-center gap-1 text-sm">
+                            {c.web.label}
+                            <ExternalLink aria-hidden className="size-3.5" />
+                          </a>
+                        )}
+                      </div>
+                      <a
+                        href={c.href}
+                        className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-[14px] bg-sage-100 px-4 font-round text-lg font-extrabold tabular-nums text-brand-900 hover:bg-brand-200"
+                        aria-label={`Volat ${c.name}: ${c.contact}`}
+                      >
+                        <PhoneCall aria-hidden className="size-4" />
+                        {c.contact}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-xs leading-relaxed text-muted">
+            Kontakty jsou ověřené podle veřejně dostupných zdrojů k {contactsCheckedAt}. Před spuštěním služby je potvrdí odborný garant.
+          </p>
+        </section>
+
         <Card>
-          <h2 className="text-lg font-semibold">Co tahle služba neumí</h2>
+          <h2 className="text-lg font-extrabold">Co tahle služba neumí</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed text-ink/90">
             <li>Zprávy ani rezervace tu nikdo průběžně nesleduje. Na nic, co sem napíšeš, nikdo hned nezareaguje.</li>
             <li>Rezervace konzultace není akutní služba. Nejbližší volný termín může být až za několik dní.</li>
             <li>Nejsme dostupní nepřetržitě a neslibujeme léčbu ani konkrétní výsledek.</li>
           </ul>
-        </Card>
-
-        <Card as="section" aria-labelledby="contacts-title">
-          <h2 id="contacts-title" className="flex items-center gap-2 text-lg font-semibold">
-            <Phone aria-hidden className="size-5 text-brand-700" /> Krizové linky a další pomoc
-          </h2>
-          {verifiedContacts.length === 0 ? (
-            <Alert tone="info" className="mt-4" title="Seznam kontaktů zatím není doplněný">
-              Prototyp záměrně neuvádí žádné krizové linky, aby nezobrazoval neověřené údaje. Před skutečným spuštěním doplní odborný garant
-              ověřené kontakty do konfigurace aplikace (<code className="rounded bg-white/70 px-1">src/config/app.ts</code>).
-            </Alert>
-          ) : (
-            <ul className="mt-4 space-y-3">
-              {verifiedContacts.map((c) => (
-                <li key={c.name} className="rounded-2xl bg-canvas p-4">
-                  <p className="font-medium">{c.name}</p>
-                  <p className="mt-0.5">{c.href ? <a href={c.href} className="link">{c.contact}</a> : c.contact}</p>
-                  <p className="mt-1 text-sm text-muted">{c.description}</p>
-                </li>
-              ))}
-            </ul>
-          )}
         </Card>
       </div>
     </div>
