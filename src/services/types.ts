@@ -18,6 +18,8 @@ import type {
   PsychologistProfile,
   SpecializationId,
   User,
+  VerificationItem,
+  VerificationStatus,
 } from '../domain/types';
 import type { ProfileEditInput } from '../domain/validation';
 import type { PersistenceStatus, StoreSnapshot } from '../storage/store';
@@ -186,6 +188,13 @@ export interface AdminService {
   requestChanges(applicationId: string, message: string): Promise<Result<PsychologistApplication>>;
   reject(applicationId: string, message: string): Promise<Result<PsychologistApplication>>;
   updateInternalNote(applicationId: string, note: string): Promise<Result<PsychologistApplication>>;
+  /** Výsledek ověření jednoho bodu přihlášky (totožnost, vzdělání, registrace, prohlášení). */
+  setVerification(
+    applicationId: string,
+    item: VerificationItem,
+    status: VerificationStatus,
+    note: string,
+  ): Promise<Result<PsychologistApplication>>;
   listProfiles(): AdminProfileView[];
   suspendProfile(profileId: string, reason: string): Promise<Result<PsychologistProfile>>;
   reactivateProfile(profileId: string): Promise<Result<PsychologistProfile>>;

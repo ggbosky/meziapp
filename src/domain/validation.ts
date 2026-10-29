@@ -1,5 +1,6 @@
 import { LANGUAGE_CODES, SPECIALIZATION_IDS } from './catalog';
 import { CITY_IDS } from './places';
+import { allDeclared, DOCUMENT_RULES, emptyDeclarations } from './verification';
 import type { ApplicationFields, LanguageCode, SpecializationId } from './types';
 
 export type FieldErrors = Record<string, string>;
@@ -73,6 +74,22 @@ export function validateApplicationFields(fields: ApplicationFields, mode: 'draf
     errors.cityId = 'Pro osobní setkání vyber město, kde konzultace nabízíš.';
   }
 
+  const registry = fields.registryNumber.trim();
+  if (registry.length > 40) errors.registryNumber = 'Číslo může mít nejvýš 40 znaků.';
+  else if (required && registry.length < 3) {
+    errors.registryNumber = 'Uveď číslo v profesním registru nebo číslo členství, abychom ho mohli ověřit.';
+  }
+
+  if (fields.documents.length > DOCUMENT_RULES.maxFiles) {
+    errors.documents = `Přilož nejvýš ${DOCUMENT_RULES.maxFiles} dokladů.`;
+  } else if (required && !fields.documents.some((d) => d.kind === 'diploma')) {
+    errors.documents = 'Přilož prosím diplom. Bez něj nemůžeme ověřit vzdělání.';
+  }
+
+  if (required && !allDeclared(fields.declarations)) {
+    errors.declarations = 'K odeslání je potřeba potvrdit všechna prohlášení.';
+  }
+
   const capacity = fields.capacityPerMonth;
   if (!Number.isInteger(capacity) || capacity < L.capacity.min || capacity > L.capacity.max) {
     if (required || capacity !== 0) {
@@ -120,5 +137,8 @@ export function emptyApplicationFields(): ApplicationFields {
     cityId: null,
     offersInPerson: false,
     worksWithYouth: false,
+    registryNumber: '',
+    documents: [],
+    declarations: emptyDeclarations(),
   };
 }

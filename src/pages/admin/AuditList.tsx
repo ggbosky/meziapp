@@ -1,4 +1,4 @@
-import { Ban, CircleCheck, CirclePause, CirclePlay, FileQuestion, StickyNote } from 'lucide-react';
+import { Ban, CircleCheck, CirclePause, CirclePlay, FileQuestion, ShieldCheck, StickyNote } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { formatTimestamp } from '../../domain/time';
 import type { AuditAction, AuditEvent } from '../../domain/types';
@@ -8,6 +8,7 @@ const ICONS: Record<AuditAction, { icon: ReactNode; label: string }> = {
   application_changes_requested: { icon: <FileQuestion aria-hidden />, label: 'Žádost o doplnění' },
   application_rejected: { icon: <Ban aria-hidden />, label: 'Zamítnutí přihlášky' },
   application_note_updated: { icon: <StickyNote aria-hidden />, label: 'Interní poznámka' },
+  application_verification_updated: { icon: <ShieldCheck aria-hidden />, label: 'Ověření odbornosti' },
   profile_suspended: { icon: <CirclePause aria-hidden />, label: 'Pozastavení profilu' },
   profile_reactivated: { icon: <CirclePlay aria-hidden />, label: 'Obnovení profilu' },
 };

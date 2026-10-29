@@ -13,6 +13,7 @@ import {
 import type { DemoState } from '../../domain/state';
 import { cityById, distanceKm } from '../../domain/places';
 import { shortName } from '../../domain/text';
+import { isFullyVerified, pendingVerification, VERIFICATION_INFO, VERIFICATION_ITEMS, VERIFICATION_VALIDITY_DAYS } from '../../domain/verification';
 import { addMinutes, toISO } from '../../domain/time';
 import type {
   ApplicationFields,
@@ -71,6 +72,9 @@ function sanitizeFields(fields: ApplicationFields): ApplicationFields {
     cityId: fields.cityId,
     offersInPerson: fields.offersInPerson,
     worksWithYouth: fields.worksWithYouth,
+    registryNumber: fields.registryNumber.trim(),
+    documents: fields.documents.map((d) => ({ ...d, fileName: d.fileName.trim().slice(0, 120) })),
+    declarations: { ...fields.declarations },
   };
 }
 
@@ -252,10 +256,22 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
         reviewerMessage: null,
         internalNote: '',
         profileId: null,
+        verification: pendingVerification(),
       };
+      // Po doplnění se body, se kterými administrace nesouhlasila, ověřují znovu.
+      const verification =
+        mode === 'submit'
+          ? (Object.fromEntries(
+              Object.entries(base.verification).map(([item, check]) => [
+                item,
+                check.status === 'rejected' ? { ...check, status: 'pending' as const, checkedAt: null, checkedBy: null } : check,
+              ]),
+            ) as PsychologistApplication['verification'])
+          : base.verification;
       const application: PsychologistApplication = {
         ...base,
         ...clean,
+        verification,
         updatedAt: at,
         ...(mode === 'submit' ? { status: 'submitted' as const, submittedAt: at } : {}),
       };
@@ -532,6 +548,10 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
         const app = state.applications.find((a) => a.id === applicationId);
         if (!app) return fail('NOT_FOUND', 'Přihlášku jsme nenašli.');
         if (app.status !== 'submitted') return fail('INVALID_STATE', 'Schválit lze jen přihlášku, která čeká na posouzení.');
+        if (!isFullyVerified(app.verification)) {
+          const missing = VERIFICATION_ITEMS.filter((i) => app.verification[i].status !== 'verified').map((i) => VERIFICATION_INFO[i].title.toLowerCase());
+          return fail('NOT_VERIFIED', `Před schválením je potřeba ověřit všechny body. Zbývá: ${missing.join(', ')}.`);
+        }
         const at = toISO(now());
         const profile: PsychologistProfile = {
           id: createId('p'),
@@ -553,6 +573,7 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
           suspensionReason: null,
           acceptingBookings: true,
           approvedAt: at,
+          verificationValidUntil: toISO(addMinutes(now(), VERIFICATION_VALIDITY_DAYS * 24 * 60)),
           avatarTone: state.profiles.length % 6,
         };
         const updatedApp: PsychologistApplication = {
@@ -625,6 +646,41 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
             ...state,
             applications: replaceById(state.applications, updated),
             auditEvents: audit(state, adminId, 'application_rejected', 'application', app.id, `Zamítnuta přihláška: ${app.professionalName}.`),
+          },
+          value: updated,
+        });
+      }),
+    setVerification: async (applicationId, item, status, note) =>
+      withApplication(applicationId, ['submitted', 'needs_changes'], (state, app, adminId) => {
+        if (!VERIFICATION_ITEMS.includes(item)) return fail('INVALID_INPUT', 'Neznámý bod ověření.');
+        if (!['pending', 'verified', 'rejected'].includes(status)) return fail('INVALID_INPUT', 'Neplatný stav ověření.');
+        const trimmed = note.trim();
+        if (trimmed.length > 500) return fail('INVALID_INPUT', 'Poznámka může mít nejvýš 500 znaků.', { note: 'Poznámka může mít nejvýš 500 znaků.' });
+        if (status === 'rejected' && trimmed.length < 5) {
+          return fail('INVALID_INPUT', 'Napiš prosím, co nesouhlasí.', { note: 'Napiš prosím, co nesouhlasí.' });
+        }
+        const at = toISO(now());
+        const updated: PsychologistApplication = {
+          ...app,
+          updatedAt: at,
+          verification: {
+            ...app.verification,
+            [item]: { status, note: trimmed, checkedAt: status === 'pending' ? null : at, checkedBy: status === 'pending' ? null : adminId },
+          },
+        };
+        const verb = status === 'verified' ? 'Ověřeno' : status === 'rejected' ? 'Nesouhlasí' : 'Vráceno k ověření';
+        return ok({
+          state: {
+            ...state,
+            applications: replaceById(state.applications, updated),
+            auditEvents: audit(
+              state,
+              adminId,
+              'application_verification_updated',
+              'application',
+              app.id,
+              `${verb}: ${VERIFICATION_INFO[item].title.toLowerCase()} u přihlášky ${app.professionalName}.`,
+            ),
           },
           value: updated,
         });

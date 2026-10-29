@@ -3,6 +3,7 @@ import { DEMO_USER_IDS } from '../../data/seed';
 import { appConfig } from '../../config/app';
 import { cityById, distanceKm } from '../../domain/places';
 import { addMinutes, localInputToISO } from '../../domain/time';
+import { checkDocumentFile } from '../../domain/verification';
 import { createTestClock, createTestServices, MemoryStorage } from '../../test/helpers';
 import type { LocalServices } from './createLocalServices';
 
@@ -243,6 +244,10 @@ describe('přihlášky a schvalování', () => {
   it('schválení žádosti zpřístupní funkce psychologa', async () => {
     const services = createTestServices();
     await signIn(services, DEMO_USER_IDS.admin);
+    // Registrace zatím není ověřená, takže schválení neprojde.
+    const blocked = await services.admin.approve('app-katerina');
+    expect(!blocked.ok && blocked.error.code).toBe('NOT_VERIFIED');
+    expect((await services.admin.setVerification('app-katerina', 'registry', 'verified', 'Dohledáno v registru.')).ok).toBe(true);
     const result = await services.admin.approve('app-katerina');
     expect(result.ok).toBe(true);
     expect(services.admin.listAuditEvents()[0]?.action).toBe('application_approved');
@@ -270,6 +275,9 @@ describe('přihlášky a schvalování', () => {
       cityId: 'brno',
       offersInPerson: true,
       worksWithYouth: false,
+      registryNumber: 'DEMO-9999',
+      documents: [{ id: 'd1', kind: 'diploma' as const, fileName: 'diplom.pdf', sizeBytes: 1000, addedAt: '2026-10-26T08:00:00.000Z' }],
+      declarations: { truthful: true, integrity: true, ethics: true, supervision: true },
     };
     const draft = await services.applications.saveDraft({ ...fields, bio: '' });
     expect(draft.ok && draft.value.status).toBe('draft');
@@ -450,5 +458,82 @@ describe('dospívající klienti', () => {
     expect(services.session.getCurrentUser()?.ageGroup).toBe('adult');
     expect((await services.appointments.book(firstOpenSlot(services, 'p-marta').id, { ageGroup: 'youth' })).ok).toBe(true);
     expect(services.session.getCurrentUser()?.ageGroup).toBe('youth');
+  });
+});
+
+describe('ověřování odborníků', () => {
+  const baseFields = {
+    professionalName: 'Testovací Odbornice',
+    professionalRole: 'Psycholožka',
+    qualificationSummary: 'Fiktivní shrnutí kvalifikace pro test, dostatečně dlouhé.',
+    specializations: ['anxiety' as const],
+    languages: ['cs' as const],
+    capacityPerMonth: 4,
+    bio: 'Fiktivní profesní popis pro test, který má dost znaků.',
+    cityId: null,
+    offersInPerson: false,
+    worksWithYouth: false,
+    registryNumber: 'DEMO-1234',
+    documents: [{ id: 'd1', kind: 'diploma' as const, fileName: 'diplom.pdf', sizeBytes: 1000, addedAt: '2026-10-26T08:00:00.000Z' }],
+    declarations: { truthful: true, integrity: true, ethics: true, supervision: true },
+  };
+
+  it('přihlášku nelze odeslat bez diplomu, čísla registrace a prohlášení', async () => {
+    const services = createTestServices();
+    await signIn(services, DEMO_USER_IDS.applicantNew);
+    const result = await services.applications.submit({
+      ...baseFields,
+      registryNumber: '',
+      documents: [],
+      declarations: { truthful: true, integrity: false, ethics: true, supervision: true },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.fieldErrors?.registryNumber).toBeTruthy();
+      expect(result.error.fieldErrors?.documents).toBeTruthy();
+      expect(result.error.fieldErrors?.declarations).toBeTruthy();
+    }
+    expect((await services.applications.submit(baseFields)).ok).toBe(true);
+  });
+
+  it('schválit lze až po ověření všech bodů', async () => {
+    const services = createTestServices();
+    await signIn(services, DEMO_USER_IDS.admin);
+    for (const item of ['identity', 'education', 'registry'] as const) {
+      expect((await services.admin.setVerification('app-jakub', item, 'verified', '')).ok).toBe(true);
+      expect((await services.admin.approve('app-jakub')).ok).toBe(false);
+    }
+    expect((await services.admin.setVerification('app-jakub', 'declarations', 'verified', '')).ok).toBe(true);
+    const approved = await services.admin.approve('app-jakub');
+    expect(approved.ok).toBe(true);
+    expect(approved.ok && Date.parse(approved.value.verificationValidUntil)).toBeGreaterThan(services.now().getTime());
+    expect(services.admin.listAuditEvents().some((e) => e.action === 'application_verification_updated')).toBe(true);
+  });
+
+  it('nesouhlas s ověřením vyžaduje poznámku a po doplnění se bod ověřuje znovu', async () => {
+    const services = createTestServices();
+    await signIn(services, DEMO_USER_IDS.applicantNew);
+    const submitted = await services.applications.submit(baseFields);
+    const appId = submitted.ok ? submitted.value.id : '';
+    await signIn(services, DEMO_USER_IDS.admin);
+    expect((await services.admin.setVerification(appId, 'registry', 'rejected', '')).ok).toBe(false);
+    expect((await services.admin.setVerification(appId, 'registry', 'rejected', 'Číslo v registru nesedí.')).ok).toBe(true);
+    expect((await services.admin.requestChanges(appId, 'Zkontroluj prosím číslo registrace.')).ok).toBe(true);
+    await signIn(services, DEMO_USER_IDS.applicantNew);
+    expect((await services.applications.submit({ ...baseFields, registryNumber: 'DEMO-4321' })).ok).toBe(true);
+    expect(services.applications.getOwn()?.verification.registry.status).toBe('pending');
+  });
+
+  it('ověřovat může jen administrace', async () => {
+    const services = createTestServices();
+    await signIn(services, DEMO_USER_IDS.applicantPending);
+    const result = await services.admin.setVerification('app-katerina', 'registry', 'verified', '');
+    expect(!result.ok && result.error.code).toBe('FORBIDDEN');
+  });
+
+  it('kontrola souboru dokladu', () => {
+    expect(checkDocumentFile({ name: 'diplom.pdf', size: 2000 })).toBeNull();
+    expect(checkDocumentFile({ name: 'diplom.exe', size: 2000 })).not.toBeNull();
+    expect(checkDocumentFile({ name: 'diplom.pdf', size: 20 * 1024 * 1024 })).not.toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, BadgeCheck, CalendarOff, CircleDashed, Languages, MapPin, UserX } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, CalendarOff, CircleCheck, CircleDashed, Languages, MapPin, UserX } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDemoSnapshot, useNow, useServices } from '../../app/AppContext';
@@ -11,6 +11,7 @@ import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { languageLabel, specializationLabel } from '../../domain/catalog';
 import { cityById, distanceKm, formatDistance } from '../../domain/places';
+import { VERIFICATION_INFO, VERIFICATION_ITEMS } from '../../domain/verification';
 import { atTime, formatDate, formatRelativeDay } from '../../domain/time';
 
 const PANEL_TONES = ['bg-sage-100', 'bg-sun-soft', 'bg-peach-soft', 'bg-sky-soft', 'bg-sage-100', 'bg-peach-soft'];
@@ -143,12 +144,21 @@ export function PsychologistDetailPage() {
           <Card as="section" aria-labelledby="verification-title">
             <h2 id="verification-title" className="flex items-center gap-2 text-xl font-extrabold">
               <BadgeCheck aria-hidden className="size-5 text-brand-700" />
-              Kvalifikace a schválení
+              Ověřený odborník
             </h2>
-            <p className="mt-2.5 leading-relaxed text-ink/90">{profile.qualificationSummary}</p>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {VERIFICATION_ITEMS.map((item) => (
+                <li key={item} className="flex items-center gap-2 rounded-2xl bg-sage-50 px-3 py-2.5 text-sm font-semibold">
+                  <CircleCheck aria-hidden className="size-4 shrink-0 text-brand-700" />
+                  {VERIFICATION_INFO[item].publicLabel}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 font-semibold">Kvalifikace</p>
+            <p className="mt-1 leading-relaxed text-ink/90">{profile.qualificationSummary}</p>
             <p className="mt-3 rounded-2xl bg-canvas p-4 text-sm leading-relaxed text-muted">
-              Profil schválila administrace {formatDate(profile.approvedAt)}. <strong className="font-semibold text-ink">Jde o simulované schválení:</strong>{' '}
-              v prototypu se neověřují žádné doklady a všechny údaje jsou smyšlené.
+              Ověřeno administrací {formatDate(profile.approvedAt)}, ověření platí do {formatDate(profile.verificationValidUntil)}.{' '}
+              <strong className="font-semibold text-ink">Jde o simulaci:</strong> v prototypu se doklady neověřují a všechny údaje jsou smyšlené.
             </p>
           </Card>
         </div>

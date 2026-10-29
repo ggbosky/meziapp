@@ -19,6 +19,22 @@ describe('DemoStore', () => {
     expect(JSON.parse(storage.getItem(KEY)!).schemaVersion).toBe(SCHEMA_VERSION);
   });
 
+  it('data verze 2 doplní o ověřování odborníků', () => {
+    const storage = new MemoryStorage();
+    const v2 = JSON.parse(JSON.stringify(createSeed(TEST_NOW))) as Record<string, unknown> & {
+      applications: Array<Record<string, unknown>>;
+      profiles: Array<Record<string, unknown>>;
+    };
+    v2.schemaVersion = 2;
+    v2.applications.forEach((a) => { delete a.registryNumber; delete a.documents; delete a.declarations; delete a.verification; });
+    v2.profiles.forEach((p) => { delete p.verificationValidUntil; });
+    storage.setItem(KEY, JSON.stringify(v2));
+    const state = createStore(storage).getState();
+    expect(state.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(state.applications.find((a) => a.id === 'app-alzbeta')?.verification.registry.status).toBe('verified');
+    expect(state.applications.find((a) => a.id === 'app-katerina')?.verification.registry.status).toBe('pending');
+  });
+
   it('neplatný JSON bezpečně nahradí výchozími daty a oznámí to', () => {
     const storage = new MemoryStorage();
     storage.setItem(KEY, '{nefunkční json');

@@ -8,11 +8,17 @@ import type {
   AvailabilitySlot,
   ConsultationDuration,
   ConsultationFormat,
+  Declarations,
+  DocumentKind,
   Feedback,
   PsychologistApplication,
   PsychologistProfile,
   User,
+  VerificationCheck,
+  VerificationItem,
+  VerificationStatus,
 } from '../domain/types';
+import { VERIFICATION_ITEMS, VERIFICATION_VALIDITY_DAYS } from '../domain/verification';
 import { SCHEMA_VERSION } from '../storage/schemaVersion';
 
 /**
@@ -34,7 +40,9 @@ export const DEMO_USER_IDS = {
 
 const SEED_DAYS = 14;
 
-interface ProfileSeed extends ApplicationFields {
+type SeedFields = Omit<ApplicationFields, 'registryNumber' | 'documents' | 'declarations'>;
+
+interface ProfileSeed extends SeedFields {
   key: string;
   approach: string;
   approvedDaysAgo: number;
@@ -167,7 +175,15 @@ const PROFILE_SEEDS: ProfileSeed[] = [
   },
 ];
 
-const PENDING_APPLICATIONS: Array<ApplicationFields & { key: string; submittedDaysAgo: number }> = [
+const PENDING_APPLICATIONS: Array<
+  SeedFields & {
+    key: string;
+    submittedDaysAgo: number;
+    registryNumber: string;
+    docs: DocumentKind[];
+    verified: Partial<Record<VerificationItem, VerificationStatus>>;
+  }
+> = [
   {
     key: 'katerina',
     professionalName: 'Kateřina Holubová',
@@ -181,6 +197,10 @@ const PENDING_APPLICATIONS: Array<ApplicationFields & { key: string; submittedDa
     cityId: 'liberec',
     offersInPerson: true,
     worksWithYouth: true,
+    registryNumber: 'DEMO-0217',
+    docs: ['diploma', 'registry'],
+    // Totožnost a vzdělání už administrace ověřila, registrace čeká na kontrolu.
+    verified: { identity: 'verified', education: 'verified', declarations: 'verified' },
     submittedDaysAgo: 2,
   },
   {
@@ -196,6 +216,9 @@ const PENDING_APPLICATIONS: Array<ApplicationFields & { key: string; submittedDa
     cityId: 'brno',
     offersInPerson: false,
     worksWithYouth: true,
+    registryNumber: 'DEMO-0388',
+    docs: ['diploma'],
+    verified: {},
     submittedDaysAgo: 1,
   },
 ];
@@ -207,6 +230,30 @@ export function createSeed(now: Date): DemoState {
     return zonedTimeToUtc({ ...parseDateKey(addDaysToKey(today, dayOffset)), hour: hour ?? 0, minute: minute ?? 0 });
   };
   const daysAgo = (days: number, time = '10:00'): string => toISO(at(-days, time));
+  const DOC_NAMES: Record<DocumentKind, string> = {
+    diploma: 'diplom-psychologie.pdf',
+    registry: 'potvrzeni-o-registraci.pdf',
+    training: 'osvedceni-vycvik.pdf',
+  };
+  const docs = (key: string, kinds: DocumentKind[], addedAt: string) =>
+    kinds.map((kind, i) => ({ id: `doc-${key}-${kind}`, kind, fileName: DOC_NAMES[kind], sizeBytes: 240_000 + i * 51_200, addedAt }));
+  const declared: Declarations = { truthful: true, integrity: true, ethics: true, supervision: true };
+  const verification = (statuses: Partial<Record<VerificationItem, VerificationStatus>>, checkedAt: string, notes: Partial<Record<VerificationItem, string>> = {}) =>
+    Object.fromEntries(
+      VERIFICATION_ITEMS.map((item): [VerificationItem, VerificationCheck] => {
+        const status = statuses[item] ?? 'pending';
+        return [
+          item,
+          {
+            status,
+            note: notes[item] ?? (status === 'verified' ? 'Ověřeno (fiktivní kontrola v rámci ukázky).' : ''),
+            checkedAt: status === 'pending' ? null : checkedAt,
+            checkedBy: status === 'pending' ? null : DEMO_USER_IDS.admin,
+          },
+        ];
+      }),
+    ) as Record<VerificationItem, VerificationCheck>;
+  const allVerified = { identity: 'verified', education: 'verified', registry: 'verified', declarations: 'verified' } as const;
 
   const users: User[] = [
     {
@@ -282,6 +329,9 @@ export function createSeed(now: Date): DemoState {
       cityId: seed.cityId,
       offersInPerson: seed.offersInPerson,
       worksWithYouth: seed.worksWithYouth,
+      registryNumber: `DEMO-0${100 + seed.avatarTone * 17}`,
+      documents: docs(seed.key, ['diploma', 'registry'], daysAgo(seed.approvedDaysAgo + 5)),
+      declarations: declared,
     };
     users.push({
       id: userId,
@@ -308,6 +358,7 @@ export function createSeed(now: Date): DemoState {
       reviewerMessage: null,
       internalNote: 'Fiktivní kontrola údajů proběhla v rámci ukázky.',
       profileId,
+      verification: verification(allVerified, approvedAt),
     });
     const suspended = seed.status === 'suspended';
     profiles.push({
@@ -321,6 +372,7 @@ export function createSeed(now: Date): DemoState {
       suspensionReason: suspended ? 'Odborník požádal o dočasné přerušení (fiktivní důvod).' : null,
       acceptingBookings: true,
       approvedAt,
+      verificationValidUntil: toISO(addMinutes(new Date(approvedAt), VERIFICATION_VALIDITY_DAYS * 24 * 60)),
       avatarTone: seed.avatarTone,
     });
     auditEvents.push({
@@ -368,7 +420,14 @@ export function createSeed(now: Date): DemoState {
   }
 
   for (const app of PENDING_APPLICATIONS) {
-    const { key, submittedDaysAgo, ...fields } = app;
+    const { key, submittedDaysAgo, registryNumber, docs: docKinds, verified, ...seedFields } = app;
+    const submittedAt = daysAgo(submittedDaysAgo, '18:40');
+    const fields: ApplicationFields = {
+      ...seedFields,
+      registryNumber,
+      documents: docs(key, docKinds, submittedAt),
+      declarations: declared,
+    };
     users.push({
       id: `u-${key}`,
       role: 'professional',
@@ -391,6 +450,7 @@ export function createSeed(now: Date): DemoState {
       reviewerMessage: null,
       internalNote: '',
       profileId: null,
+      verification: verification(verified, daysAgo(Math.max(0, submittedDaysAgo - 1), '09:30')),
     });
   }
 
@@ -419,6 +479,14 @@ export function createSeed(now: Date): DemoState {
     cityId: 'plzen',
     offersInPerson: true,
     worksWithYouth: false,
+    registryNumber: '',
+    documents: docs('radek', ['training'], daysAgo(28)),
+    declarations: declared,
+    verification: verification(
+      { identity: 'verified', education: 'rejected', registry: 'rejected', declarations: 'verified' },
+      daysAgo(20, '13:00'),
+      { education: 'Doložen jen kurz osobního rozvoje, chybí vzdělání v psychologii (fiktivní případ).', registry: 'Číslo registrace neuvedeno.' },
+    ),
     createdAt: daysAgo(30),
     updatedAt: daysAgo(20, '13:05'),
     submittedAt: daysAgo(28),

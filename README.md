@@ -63,6 +63,17 @@ Vstup do demo účtů je nástroj prototypu, ne přihlášení. Simulovaná opr�
 7. Vrať se k žadateli: po schválení vidí přehled psychologa a může vypisovat termíny.
 8. Tlačítkem **Obnovit demo** vrátíš výchozí stav.
 
+## Ověřování odborníků
+
+Aby se za psychologa nemohl vydávat kdokoli, prochází každý žadatel ověřením:
+
+- **Žadatel dodá:** číslo v profesním registru nebo číslo členství v profesní organizaci, diplom (povinný), případně doklad o registraci a osvědčení o výcviku, a čtyři čestná prohlášení (pravdivost údajů, bezúhonnost, etický kodex a mlčenlivost, supervize). Bez nich přihlášku nejde odeslat.
+- **Administrace ověří čtyři body:** totožnost, vzdělání v psychologii, registraci nebo členství a prohlášení. Každý bod označí „Ověřeno“ nebo „Nesouhlasí“ (s povinnou poznámkou). Všechny kroky se zapisují do historie změn.
+- **Schválit lze až po ověření všech bodů.** Pravidlo hlídá datová vrstva (`admin.approve` jinak vrátí chybu `NOT_VERIFIED`), nejen tlačítko. Body, se kterými administrace nesouhlasila, se po doplnění přihlášky ověřují znovu.
+- Neschválený žadatel nevidí rezervace ani nemůže vypisovat termíny. Ověření platí rok (`VERIFICATION_VALIDITY_DAYS` v `src/domain/verification.ts`); profil klientům ukazuje, co bylo ověřeno a do kdy.
+
+V prototypu je ověření simulované: soubory se nikam neodesílají (uloží se jen název a velikost) a nic se nekontroluje proti skutečným registrům. Pro ostrý provoz je potřeba bezpečné úložiště dokladů, ověření totožnosti (bankovní identita nebo Identita občana), výpis z rejstříku trestů a s odborným garantem určit, proti kterým registrům a profesním organizacím se odbornost ověřuje.
+
 ## Poloha, osobní setkání a dospívající
 
 - Klient může zadat nejbližší větší město (bez adresy). Přihlášenému klientovi se uloží k účtu, nepřihlášenému jen do prohlížeče. Seznam psychologů pak ukáže sekci „Ve tvém okolí“ (do 50 km vzdušnou čarou mezi středy měst, nastavitelné v konfiguraci) a u každého odborníka přibližnou vzdálenost.

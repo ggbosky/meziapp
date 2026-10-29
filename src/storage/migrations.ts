@@ -25,6 +25,34 @@ const STEPS: Record<number, (data: Rec) => Rec> = {
       appointments: mapList(data.appointments, (a) => ({ format: 'online', ...a })),
     };
   },
+  // 2 → 3: ověřování odborníků (registrace, doklady, prohlášení, výsledky ověření).
+  2: (data) => {
+    const check = (status: string, at: unknown) => ({ status, note: '', checkedAt: status === 'verified' ? at : null, checkedBy: null });
+    const yearAfter = (iso: unknown) =>
+      typeof iso === 'string' ? new Date(Date.parse(iso) + 365 * 24 * 3600 * 1000).toISOString() : new Date().toISOString();
+    return {
+      ...data,
+      schemaVersion: 3,
+      applications: mapList(data.applications, (a) => {
+        const approved = a.status === 'approved';
+        const status = approved ? 'verified' : 'pending';
+        const at = a.decidedAt ?? null;
+        return {
+          registryNumber: '',
+          documents: [],
+          declarations: { truthful: approved, integrity: approved, ethics: approved, supervision: approved },
+          ...a,
+          verification: {
+            identity: check(status, at),
+            education: check(status, at),
+            registry: check(status, at),
+            declarations: check(status, at),
+          },
+        };
+      }),
+      profiles: mapList(data.profiles, (p) => ({ verificationValidUntil: yearAfter(p.approvedAt), ...p })),
+    };
+  },
 };
 
 /** Vrací převedená data, nebo původní hodnotu, pokud převod neexistuje. */

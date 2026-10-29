@@ -19,6 +19,8 @@ import { formatTimestamp } from '../../domain/time';
 import type { PsychologistApplication } from '../../domain/types';
 import { INTERNAL_NOTE_MAX } from '../../domain/validation';
 import { AuditList } from './AuditList';
+import { VerificationPanel } from './VerificationPanel';
+import { isFullyVerified } from '../../domain/verification';
 import { ReasonDialog } from './ReasonDialog';
 
 export function ApplicationDetailPage() {
@@ -41,6 +43,7 @@ function ApplicationDetail({ app }: { app: PsychologistApplication }) {
   const [approveError, setApproveError] = useState<string | null>(null);
   const events = admin.listAuditEvents().filter((e) => e.targetId === app.id || (app.profileId && e.targetId === app.profileId));
   const canDecide = app.status === 'submitted';
+  const fullyVerified = isFullyVerified(app.verification);
 
   const rows: Array<[string, string]> = [
     ['Profesní role', app.professionalRole],
@@ -51,6 +54,8 @@ function ApplicationDetail({ app }: { app: PsychologistApplication }) {
     ['Profesní popis', app.bio],
     ['Město a forma', `${cityById(app.cityId)?.name ?? 'Neuvedeno'} · ${app.offersInPerson ? 'online i osobně' : 'jen online'}`],
     ['Dospívající klienti', app.worksWithYouth ? 'Pracuje i s dospívajícími' : 'Jen dospělí'],
+    ['Číslo registrace', app.registryNumber || '—'],
+    ['Doklady', app.documents.map((d) => d.fileName).join(', ') || '—'],
     ['Demo účet', admin.getUserName(app.userId)],
   ];
 
@@ -84,12 +89,14 @@ function ApplicationDetail({ app }: { app: PsychologistApplication }) {
         </p>
       </Card>
 
+      <VerificationPanel app={app} />
+
       <Card as="section" aria-labelledby="decision-title">
         <SectionTitle id="decision-title" description={canDecide ? 'Rozhodnutí se zapíše do historie změn.' : 'O této přihlášce už je rozhodnuto nebo čeká na žadatele.'}>
           Rozhodnutí
         </SectionTitle>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button disabled={!canDecide} icon={<CircleCheck aria-hidden className="size-4" />} onClick={() => setDialog('approve')}>
+          <Button disabled={!canDecide || !fullyVerified} icon={<CircleCheck aria-hidden className="size-4" />} onClick={() => setDialog('approve')}>
             Schválit
           </Button>
           <Button variant="secondary" disabled={!canDecide} icon={<FileQuestion aria-hidden className="size-4" />} onClick={() => setDialog('changes')}>
@@ -105,6 +112,9 @@ function ApplicationDetail({ app }: { app: PsychologistApplication }) {
             Zamítnout
           </Button>
         </div>
+        {canDecide && !fullyVerified && (
+          <p className="mt-3 text-sm text-muted">Schválení se odemkne, až budou ověřené všechny body výše.</p>
+        )}
         {app.status === 'approved' && app.profileId && (
           <p className="mt-4 text-sm text-muted">
             Profil odborníka je vytvořený. Správa profilu: <Link to="/admin/profily" className="link">Profily</Link>

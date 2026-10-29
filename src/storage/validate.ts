@@ -50,7 +50,27 @@ const applicationFields: Shape = {
   cityId: cityOrNull,
   offersInPerson: isBool,
   worksWithYouth: isBool,
+  registryNumber: isString,
+  documents: arrayOf((d) =>
+    matches(d, {
+      id: isString,
+      kind: oneOf('diploma', 'registry', 'training'),
+      fileName: isString,
+      sizeBytes: isFiniteNumber,
+      addedAt: isISO,
+    }),
+  ),
+  declarations: (d: unknown) =>
+    matches(d, { truthful: isBool, integrity: isBool, ethics: isBool, supervision: isBool }),
 };
+
+const verificationCheck = (v: unknown) =>
+  matches(v, {
+    status: oneOf('pending', 'verified', 'rejected'),
+    note: isString,
+    checkedAt: isISOOrNull,
+    checkedBy: isStringOrNull,
+  });
 
 const shapes = {
   user: {
@@ -75,6 +95,8 @@ const shapes = {
     reviewerMessage: isStringOrNull,
     internalNote: isString,
     profileId: isStringOrNull,
+    verification: (v: unknown) =>
+      matches(v, { identity: verificationCheck, education: verificationCheck, registry: verificationCheck, declarations: verificationCheck }),
   },
   profile: {
     ...applicationFields,
@@ -87,6 +109,7 @@ const shapes = {
     suspensionReason: isStringOrNull,
     acceptingBookings: isBool,
     approvedAt: isISO,
+    verificationValidUntil: isISO,
     avatarTone: isFiniteNumber,
   },
   slot: {
@@ -128,6 +151,7 @@ const shapes = {
       'application_changes_requested',
       'application_rejected',
       'application_note_updated',
+      'application_verification_updated',
       'profile_suspended',
       'profile_reactivated',
     ),

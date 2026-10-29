@@ -107,7 +107,11 @@ export function ForProfessionalsPage() {
     { icon: <HandHeart aria-hidden />, title: 'Nabízíš jen část svého času', text: 'Sám nebo sama určuješ, kolik bezplatných konzultací měsíčně nabídneš.' },
     { icon: <CalendarClock aria-hidden />, title: 'Termíny podle sebe', text: 'Vypisuješ konkrétní termíny na 30 nebo 50 minut. Systém hlídá, aby se nepřekrývaly.' },
     { icon: <SlidersHorizontal aria-hidden />, title: 'Příjem můžeš pozastavit', text: 'Když nemáš kapacitu, jedním přepínačem přestaneš přijímat nové rezervace.' },
-    { icon: <UserCheck aria-hidden />, title: 'Ruční schválení', text: 'Přihlášku posoudí člověk z provozního týmu. V prototypu je posouzení simulované.' },
+    {
+      icon: <UserCheck aria-hidden />,
+      title: 'Důkladné ověření',
+      text: 'Ověřujeme totožnost, vzdělání v psychologii, profesní registraci a bezúhonnost. Bez toho nelze vypisovat termíny. V prototypu je ověření simulované.',
+    },
     { icon: <CircleSlash aria-hidden />, title: 'Žádné hodnocení odborníků', text: 'Nezobrazujeme hvězdičky, recenze ani žebříčky. Klienti vybírají podle zaměření a termínu.' },
     { icon: <FileCheck2 aria-hidden />, title: 'Minimum údajů o klientech', text: 'Uvidíš jen rezervace ke svým termínům a nezbytné údaje. Klienti nevyplňují popis potíží.' },
   ];
@@ -131,8 +135,8 @@ export function ForProfessionalsPage() {
         <div>
           <h2 className="font-display text-2xl font-extrabold">Jak se zapojit</h2>
           <ol className="mt-4 list-decimal space-y-1.5 pl-5 leading-relaxed text-ink/90">
-            <li>Vyplníš krátkou přihlášku: profesní jméno, roli, shrnutí kvalifikace, zaměření, jazyky a kapacitu.</li>
-            <li>Provozní tým přihlášku posoudí, případně požádá o doplnění.</li>
+            <li>Vyplníš přihlášku: profesní údaje, zaměření, kapacitu, číslo registrace, diplom a čestná prohlášení.</li>
+            <li>Provozní tým ověří totožnost, vzdělání, registraci a prohlášení, případně požádá o doplnění.</li>
             <li>Po schválení vypíšeš první termíny a tvůj profil se zobrazí klientům.</li>
           </ol>
           <p className="mt-4 text-sm text-muted">V prototypu se nenahrávají žádné doklady a všechny údaje jsou fiktivní.</p>

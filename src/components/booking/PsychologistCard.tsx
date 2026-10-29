@@ -1,4 +1,4 @@
-import { ChevronRight, MapPin } from 'lucide-react';
+import { BadgeCheck, ChevronRight, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { languageLabel, specializationLabel } from '../../domain/catalog';
 import { formatDistance } from '../../domain/places';
@@ -18,6 +18,7 @@ export function PsychologistCard({ summary, now }: { summary: PublicProfileSumma
             <Link to={`/psychologove/${profile.id}`} className="after:absolute after:inset-0 after:rounded-[var(--radius-card)] focus-visible:outline-none">
               {profile.professionalName}
             </Link>
+            <BadgeCheck aria-label="Ověřený odborník" role="img" className="ml-1.5 inline size-[1.05rem] align-[-2px] text-logo-blue" />
           </h2>
           <p className="text-sm text-muted">
             {profile.professionalRole} · {profile.languages.map(languageLabel).join(', ')}

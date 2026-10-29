@@ -51,7 +51,7 @@ const FAQ = [
   },
   {
     q: 'Kdo jsou odborníci?',
-    a: 'Psychologové, kteří nabízejí část svého času zdarma. Každou přihlášku posuzuje člověk z provozního týmu. V tomto prototypu jsou všichni odborníci i jejich kvalifikace fiktivní a schvalování je jen simulované.',
+    a: 'Psychologové, kteří nabízejí část svého času zdarma. U každého ověřujeme totožnost, vzdělání v psychologii, profesní registraci a bezúhonnost. V tomto prototypu jsou všichni odborníci i jejich kvalifikace fiktivní a schvalování je jen simulované.',
   },
   {
     q: 'Musím popsat, co mě trápí?',
@@ -366,7 +366,7 @@ export function HomePage() {
               title: 'Omezená kapacita',
               text: 'Volné termíny se mohou rychle obsadit a někdy nebudou žádné. Neslibujeme okamžitou dostupnost.',
             },
-            { icon: <ShieldCheck aria-hidden />, title: 'Ručně schválení odborníci', text: 'Každou přihlášku posoudí člověk. V prototypu je schvalování simulované.' },
+            { icon: <ShieldCheck aria-hidden />, title: 'Ověření odborníci', text: 'U každého ověřujeme totožnost, vzdělání v psychologii, profesní registraci a bezúhonnost. V prototypu je ověření simulované.' },
           ].map((item) => (
             <li key={item.title} className="flex gap-3.5">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-sage-100 text-brand-800 [&_svg]:size-5">{item.icon}</span>

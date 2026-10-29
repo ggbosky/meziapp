@@ -97,7 +97,13 @@ describe('průchody aplikací', () => {
 
     await services.session.signInAs(DEMO_USER_IDS.admin);
     const admin = renderApp('/admin/zadosti/app-katerina', services);
-    await admin.user.click(await screen.findByRole('button', { name: 'Schválit' }));
+    // Schválení je zamčené, dokud administrace neověří všechny body (tady chybí registrace).
+    expect(await screen.findByRole('button', { name: 'Schválit' })).toBeDisabled();
+    const verifyButtons = screen.getAllByRole('button', { name: 'Ověřeno' }).filter((b) => !(b as HTMLButtonElement).disabled);
+    expect(verifyButtons).toHaveLength(1);
+    await admin.user.click(verifyButtons[0]!);
+    expect(screen.getByRole('button', { name: 'Schválit' })).toBeEnabled();
+    await admin.user.click(screen.getByRole('button', { name: 'Schválit' }));
     await admin.user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Schválit přihlášku' }));
     expect(await screen.findAllByText('Schválená')).not.toHaveLength(0);
     admin.unmount();

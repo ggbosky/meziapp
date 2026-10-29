@@ -8,6 +8,8 @@ import { Button, ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Checkbox, ChipCheckboxGroup, TextArea, TextField } from '../../components/ui/Field';
 import { CitySelect } from '../../components/location/CitySelect';
+import { VerificationFields } from './VerificationFields';
+import { VerificationProgress } from './VerificationProgress';
 import { appConfig } from '../../config/app';
 import { cityById } from '../../domain/places';
 import { PageHeader, SectionTitle } from '../../components/ui/PageHeader';
@@ -29,6 +31,9 @@ const FIELD_LABELS: Record<string, string> = {
   capacityPerMonth: 'Nabízená kapacita',
   bio: 'Profesní popis',
   cityId: 'Město praxe',
+  registryNumber: 'Číslo registrace nebo členství',
+  documents: 'Doklady',
+  declarations: 'Čestná prohlášení',
 };
 
 export function ApplicationPage() {
@@ -42,10 +47,13 @@ export function ApplicationPage() {
     <div className="space-y-8">
       <PageHeader
         title="Přihláška odborníka"
-        description="Každou přihlášku ručně posoudí provozní tým. V prototypu je posouzení simulované a nenahrávají se žádné doklady."
+        description="Každého odborníka ověřujeme: totožnost, vzdělání v psychologii, profesní registraci a čestná prohlášení. V prototypu je ověření simulované a soubory se nikam neodesílají."
         actions={application ? <ApplicationStatusBadge status={application.status} /> : undefined}
       />
       <StatusTimeline application={application} />
+      {application && application.status !== 'draft' && application.status !== 'approved' && (
+        <VerificationProgress verification={application.verification} />
+      )}
       {application?.status === 'needs_changes' && application.reviewerMessage && (
         <Alert tone="warning" title="Administrace žádá o doplnění">
           {application.reviewerMessage}
@@ -112,6 +120,9 @@ function ApplicationForm({ application }: { application: PsychologistApplication
           cityId: application.cityId,
           offersInPerson: application.offersInPerson,
           worksWithYouth: application.worksWithYouth,
+          registryNumber: application.registryNumber,
+          documents: application.documents,
+          declarations: application.declarations,
         }
       : emptyApplicationFields(),
   );
@@ -202,7 +213,7 @@ function ApplicationForm({ application }: { application: PsychologistApplication
         <TextArea
           id="app-qualificationSummary"
           label="Shrnutí kvalifikace"
-          hint="Vzdělání, výcviky a praxe v několika větách. Doklady se v prototypu nenahrávají."
+          hint="Vzdělání, výcviky a praxe v několika větách. Doklady přilož níže v části Ověření odbornosti."
           value={fields.qualificationSummary}
           onChange={(e) => set('qualificationSummary', e.target.value)}
           error={errors.qualificationSummary}
@@ -274,6 +285,15 @@ function ApplicationForm({ application }: { application: PsychologistApplication
           maxChars={L.bio.max}
           required
         />
+        <VerificationFields
+          registryNumber={fields.registryNumber}
+          onRegistryNumber={(v) => set('registryNumber', v)}
+          documents={fields.documents}
+          onDocuments={(v) => set('documents', v)}
+          declarations={fields.declarations}
+          onDeclarations={(v) => set('declarations', v)}
+          errors={errors}
+        />
         <div className="flex flex-col-reverse gap-2 border-t border-line pt-6 sm:flex-row sm:justify-end">
           <Button variant="secondary" loading={savingDraft} disabled={submitting} icon={<Save aria-hidden className="size-4" />} onClick={() => void handle('draft')}>
             Uložit rozpracovanou
@@ -300,6 +320,8 @@ function ApplicationSummary({ application }: { application: PsychologistApplicat
     ['Profesní popis', application.bio],
     ['Město a forma', `${cityById(application.cityId)?.name ?? 'Neuvedeno'} · ${application.offersInPerson ? 'online i osobně' : 'jen online'}`],
     ['Dospívající klienti', application.worksWithYouth ? 'Ano' : 'Ne'],
+    ['Číslo registrace', application.registryNumber || '—'],
+    ['Doklady', application.documents.map((d) => d.fileName).join(', ') || '—'],
   ];
   return (
     <div className="space-y-6">

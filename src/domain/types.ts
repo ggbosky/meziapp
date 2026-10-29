@@ -40,6 +40,40 @@ export type SpecializationId =
 
 export type LanguageCode = 'cs' | 'sk' | 'en' | 'uk' | 'de';
 
+/** Body, které administrace ověřuje před schválením odborníka. */
+export type VerificationItem = 'identity' | 'education' | 'registry' | 'declarations';
+export type VerificationStatus = 'pending' | 'verified' | 'rejected';
+
+export interface VerificationCheck {
+  status: VerificationStatus;
+  /** Interní poznámka administrace k ověření (co a jak bylo zkontrolováno). */
+  note: string;
+  checkedAt: ISODateTime | null;
+  checkedBy: string | null;
+}
+
+export type DocumentKind = 'diploma' | 'registry' | 'training';
+
+/** Přiložený doklad. V prototypu se ukládá jen název a velikost souboru, ne jeho obsah. */
+export interface ApplicationDocument {
+  id: string;
+  kind: DocumentKind;
+  fileName: string;
+  sizeBytes: number;
+  addedAt: ISODateTime;
+}
+
+export interface Declarations {
+  /** Údaje jsou pravdivé a doklady patří žadateli. */
+  truthful: boolean;
+  /** Bezúhonnost. */
+  integrity: boolean;
+  /** Dodržování etického kodexu. */
+  ethics: boolean;
+  /** Dostupná supervize nebo odborná konzultace. */
+  supervision: boolean;
+}
+
 export type ApplicationStatus = 'draft' | 'submitted' | 'approved' | 'needs_changes' | 'rejected';
 
 export interface ApplicationFields {
@@ -57,6 +91,10 @@ export interface ApplicationFields {
   offersInPerson: boolean;
   /** Pracuje i s dospívajícími (15–17 let). */
   worksWithYouth: boolean;
+  /** Číslo v profesním registru nebo číslo členství v profesní organizaci. */
+  registryNumber: string;
+  documents: ApplicationDocument[];
+  declarations: Declarations;
 }
 
 export interface PsychologistApplication extends ApplicationFields {
@@ -72,6 +110,8 @@ export interface PsychologistApplication extends ApplicationFields {
   /** Interní provozní poznámka administrace. Týká se pouze přihlášky. */
   internalNote: string;
   profileId: string | null;
+  /** Výsledky ověření jednotlivých bodů administrací. */
+  verification: Record<VerificationItem, VerificationCheck>;
 }
 
 export type ProfileStatus = 'active' | 'suspended';
@@ -99,6 +139,8 @@ export interface PsychologistProfile {
   /** Odborník si může sám pozastavit příjem nových rezervací. */
   acceptingBookings: boolean;
   approvedAt: ISODateTime;
+  /** Do kdy platí ověření odbornosti; poté je potřeba ověřit znovu. */
+  verificationValidUntil: ISODateTime;
   /** Index barevného tónu avataru. */
   avatarTone: number;
 }
@@ -151,6 +193,7 @@ export type AuditAction =
   | 'application_changes_requested'
   | 'application_rejected'
   | 'application_note_updated'
+  | 'application_verification_updated'
   | 'profile_suspended'
   | 'profile_reactivated';
 
