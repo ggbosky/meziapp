@@ -6,6 +6,7 @@ import { ServicesProvider } from './app/AppContext';
 import { ErrorBoundary } from './components/feedback/ErrorBoundary';
 import { ErrorScreen } from './components/feedback/ErrorScreen';
 import { ToastProvider } from './components/ui/Toast';
+import { createHttpDelivery } from './services/delivery';
 import { createLocalServices } from './services/local/createLocalServices';
 import { getBrowserStorage } from './storage/store';
 import './index.css';
@@ -23,7 +24,7 @@ const root = createRoot(rootElement);
 try {
   // Jediné místo, kde se volí implementace služeb. Pro backend by se zde
   // místo createLocalServices vytvořila implementace volající API.
-  const services = createLocalServices({ storage: getBrowserStorage() });
+  const services = createLocalServices({ storage: getBrowserStorage(), delivery: createHttpDelivery() });
   services.store.connectToWindow(window);
 
   root.render(

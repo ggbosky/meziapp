@@ -20,6 +20,7 @@ export function VerificationFields({
   declarations,
   onDeclarations,
   errors,
+  onFile,
 }: {
   registryNumber: string;
   onRegistryNumber: (v: string) => void;
@@ -28,6 +29,8 @@ export function VerificationFields({
   declarations: Declarations;
   onDeclarations: (v: Declarations) => void;
   errors: Record<string, string>;
+  /** Vybraný soubor k dokladu (obsah se drží jen v paměti do odeslání). */
+  onFile?: (documentId: string, file: File) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [kind, setKind] = useState<DocumentKind>('diploma');
@@ -47,13 +50,9 @@ export function VerificationFields({
         setFileError(`Přilož nejvýš ${DOCUMENT_RULES.maxFiles} dokladů.`);
         break;
       }
-      next.push({
-        id: `doc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
-        kind,
-        fileName: file.name,
-        sizeBytes: file.size,
-        addedAt: new Date().toISOString(),
-      });
+      const id = `doc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+      next.push({ id, kind, fileName: file.name, sizeBytes: file.size, addedAt: new Date().toISOString() });
+      onFile?.(id, file);
       setFileError(null);
     }
     onDocuments(next);
@@ -141,7 +140,7 @@ export function VerificationFields({
             />
           </label>
         </div>
-        <p className="mt-1.5 text-[0.8rem] text-muted">PDF, JPG nebo PNG do 10 MB. V prototypu se soubor nikam neodesílá, uloží se jen jeho název.</p>
+        <p className="mt-1.5 text-[0.8rem] text-muted">PDF, JPG nebo PNG, dohromady nejvýš 3 MB. Doklady se odešlou spolu s přihláškou provoznímu týmu.</p>
         {(fileError || errors.documents) && <FieldError id="documents-error" message={fileError ?? errors.documents!} />}
       </div>
 
@@ -159,7 +158,7 @@ export function VerificationFields({
       </fieldset>
 
       <p className="text-[0.8rem] leading-relaxed text-ink/70">
-        Totožnost se v ostrém provozu ověří přes bankovní identitu nebo Identitu občana. V prototypu ji jen simulovaně potvrdí administrace.
+        Totožnost ověříme při dalším kroku (v ostrém provozu přes bankovní identitu nebo Identitu občana).
       </p>
     </section>
   );

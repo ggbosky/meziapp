@@ -6,7 +6,10 @@ import { usePageTitle } from '../../components/layout/usePageTitle';
 import { Alert } from '../../components/ui/Alert';
 import { Button, ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Checkbox, ChipCheckboxGroup, TextArea, TextField } from '../../components/ui/Field';
+import { Checkbox, ChipCheckboxGroup, FieldError, TextArea, TextField } from '../../components/ui/Field';
+import { fail, type Result } from '../../domain/result';
+import { DOCUMENT_RULES } from '../../domain/verification';
+import { readFileAsBase64, type DeliveryResult } from '../../services/delivery';
 import { CitySelect } from '../../components/location/CitySelect';
 import { VerificationFields } from './VerificationFields';
 import { VerificationProgress } from './VerificationProgress';
@@ -20,7 +23,7 @@ import { languageLabel, LANGUAGES, specializationLabel, SPECIALIZATIONS } from '
 import { countLabel } from '../../domain/text';
 import { formatTimestamp } from '../../domain/time';
 import type { ApplicationFields, PsychologistApplication } from '../../domain/types';
-import { APPLICATION_LIMITS, emptyApplicationFields } from '../../domain/validation';
+import { APPLICATION_LIMITS, emptyApplicationFields, validateApplicationFields } from '../../domain/validation';
 
 const FIELD_LABELS: Record<string, string> = {
   professionalName: 'Profesní jméno',
@@ -31,6 +34,8 @@ const FIELD_LABELS: Record<string, string> = {
   capacityPerMonth: 'Nabízená kapacita',
   bio: 'Profesní popis',
   cityId: 'Město praxe',
+  contactEmail: 'Kontaktní e-mail',
+  consent: 'Souhlas se zpracováním údajů',
   registryNumber: 'Číslo registrace nebo členství',
   documents: 'Doklady',
   declarations: 'Čestná prohlášení',
@@ -42,12 +47,13 @@ export function ApplicationPage() {
   useDemoSnapshot();
   const application = applications.getOwn();
   const editable = !application || application.status === 'draft' || application.status === 'needs_changes';
+  const [deliveryNotice, setDeliveryNotice] = useState<DeliveryResult | null>(null);
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Přihláška odborníka"
-        description="Každého odborníka ověřujeme: totožnost, vzdělání v psychologii, profesní registraci a čestná prohlášení. V prototypu je ověření simulované a soubory se nikam neodesílají."
+        description="Každého odborníka ověřujeme: totožnost, vzdělání v psychologii, profesní registraci a čestná prohlášení. Odeslaná přihláška i s doklady přijde e-mailem provoznímu týmu."
         actions={application ? <ApplicationStatusBadge status={application.status} /> : undefined}
       />
       <StatusTimeline application={application} />
@@ -59,7 +65,22 @@ export function ApplicationPage() {
           {application.reviewerMessage}
         </Alert>
       )}
-      {editable ? <ApplicationForm application={application} key={application?.id ?? 'new'} /> : <ApplicationSummary application={application!} />}
+      {deliveryNotice && (
+        <Alert
+          tone={deliveryNotice.status === 'sent' ? 'success' : 'info'}
+          title={deliveryNotice.status === 'sent' ? 'Přihláška dorazila provoznímu týmu' : 'Přihláška je uložená jen v ukázce'}
+          live
+        >
+          {deliveryNotice.status === 'sent'
+            ? 'Poslali jsme ji e-mailem i s doklady. Ozveme se ti na zadaný e-mail, jakmile ji ověříme, případně s žádostí o doplnění.'
+            : `${deliveryNotice.status === 'unavailable' ? deliveryNotice.message : ''} Administraci si můžeš vyzkoušet v demo účtu.`}
+        </Alert>
+      )}
+      {editable ? (
+        <ApplicationForm application={application} key={application?.id ?? 'new'} onDelivered={setDeliveryNotice} />
+      ) : (
+        <ApplicationSummary application={application!} />
+      )}
     </div>
   );
 }
@@ -104,8 +125,14 @@ function StatusTimeline({ application }: { application: PsychologistApplication 
   );
 }
 
-function ApplicationForm({ application }: { application: PsychologistApplication | null }) {
-  const { applications } = useServices();
+function ApplicationForm({
+  application,
+  onDelivered,
+}: {
+  application: PsychologistApplication | null;
+  onDelivered: (result: DeliveryResult) => void;
+}) {
+  const { applications, delivery } = useServices();
   const toast = useToast();
   const [fields, setFields] = useState<ApplicationFields>(() =>
     application
@@ -129,7 +156,49 @@ function ApplicationForm({ application }: { application: PsychologistApplication
   const [capacityText, setCapacityText] = useState(String(fields.capacityPerMonth || ''));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveDraft, savingDraft] = useAction(applications.saveDraft);
-  const [submit, submitting] = useAction(applications.submit);
+  const [contactEmail, setContactEmail] = useState('');
+  const [consent, setConsent] = useState(false);
+  const files = useRef(new Map<string, File>());
+  const honeypot = useRef<HTMLInputElement>(null);
+  // Odeslání = kontrola, doručení e-mailem a teprve pak zápis do aplikace.
+  const [submit, submitting] = useAction(async (data: ApplicationFields): Promise<Result<unknown>> => {
+    const local = validateApplicationFields(data, 'submit');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contactEmail.trim())) local.contactEmail = 'Zadej e-mail, na který ti můžeme odpovědět.';
+    if (!consent) local.consent = 'Bez souhlasu se zpracováním údajů přihlášku nemůžeme přijmout.';
+    const missing = data.documents.filter((d) => !files.current.has(d.id));
+    if (!local.documents && missing.length > 0) {
+      local.documents = `Přilož prosím znovu: ${missing.map((d) => d.fileName).join(', ')}. Po obnovení stránky si soubory nepamatujeme.`;
+    }
+    const total = data.documents.reduce((sum, d) => sum + d.sizeBytes, 0);
+    if (!local.documents && total > DOCUMENT_RULES.maxTotalBytes) local.documents = 'Doklady mohou mít dohromady nejvýš 3 MB.';
+    if (Object.keys(local).length > 0) return fail('INVALID_INPUT', 'Zkontroluj prosím zvýrazněná pole.', local);
+
+    const sent = await delivery.send({
+      professionalName: data.professionalName,
+      professionalRole: data.professionalRole,
+      contactEmail: contactEmail.trim(),
+      qualificationSummary: data.qualificationSummary,
+      specializations: data.specializations.map(specializationLabel),
+      languages: data.languages.map(languageLabel),
+      capacityPerMonth: data.capacityPerMonth,
+      bio: data.bio,
+      city: cityById(data.cityId)?.name ?? null,
+      offersInPerson: data.offersInPerson,
+      worksWithYouth: data.worksWithYouth,
+      registryNumber: data.registryNumber,
+      declarations: data.declarations,
+      consent,
+      files: await Promise.all(
+        data.documents.map(async (d) => ({ kind: d.kind, fileName: d.fileName, contentBase64: await readFileAsBase64(files.current.get(d.id)!) })),
+      ),
+      website: honeypot.current?.value ?? '',
+    });
+    if (sent.status === 'invalid') return fail('INVALID_INPUT', sent.message, sent.fieldErrors);
+    if (sent.status === 'failed') return fail('INVALID_STATE', sent.message);
+    const saved = await applications.submit(data);
+    if (saved.ok) onDelivered(sent);
+    return saved;
+  });
   const summaryRef = useRef<HTMLDivElement>(null);
   const [focusSummary, setFocusSummary] = useState(0);
 
@@ -145,7 +214,7 @@ function ApplicationForm({ application }: { application: PsychologistApplication
     if (!result) return;
     if (result.ok) {
       setErrors({});
-      toast(mode === 'draft' ? 'Rozpracovaná přihláška je uložená.' : 'Přihláška je odeslaná k posouzení.');
+      toast(mode === 'draft' ? 'Rozpracovaná přihláška je uložená (přílohy přilož před odesláním).' : 'Přihláška je odeslaná k posouzení.');
     } else {
       setErrors(result.error.fieldErrors ?? { form: result.error.message });
       setFocusSummary((n) => n + 1);
@@ -157,7 +226,7 @@ function ApplicationForm({ application }: { application: PsychologistApplication
 
   return (
     <Card as="section" aria-labelledby="form-title">
-      <SectionTitle id="form-title" description="Vyplň prosím fiktivní údaje. Nevkládej skutečné osobní ani zdravotní informace.">
+      <SectionTitle id="form-title" description="Po odeslání přijde přihláška i s doklady e-mailem provoznímu týmu, který ji ověří.">
         {application?.status === 'needs_changes' ? 'Doplnění přihlášky' : 'Údaje o tobě'}
       </SectionTitle>
       <form
@@ -293,7 +362,39 @@ function ApplicationForm({ application }: { application: PsychologistApplication
           declarations={fields.declarations}
           onDeclarations={(v) => set('declarations', v)}
           errors={errors}
+          onFile={(id, file) => files.current.set(id, file)}
         />
+        <div className="space-y-4">
+          <div id="app-contactEmail" tabIndex={-1} className="outline-none">
+            <TextField
+              label="Kontaktní e-mail"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              hint="Sem ti napíšeme výsledek ověření nebo žádost o doplnění."
+              error={errors.contactEmail}
+              maxLength={120}
+              required
+            />
+          </div>
+          <div id="app-consent" tabIndex={-1} className="rounded-2xl bg-canvas p-4 outline-none">
+            <Checkbox
+              checked={consent}
+              onChange={setConsent}
+              label="Souhlasím se zpracováním osobních údajů a dokladů z této přihlášky pro účely ověření a posouzení."
+              description="Údaje použijeme jen k posouzení přihlášky a nikomu dalšímu je nepředáme."
+            />
+            {errors.consent && <FieldError id="consent-error" message={errors.consent} />}
+          </div>
+        </div>
+        <div aria-hidden="true" className="absolute -left-[9999px] h-0 overflow-hidden">
+          <label>
+            Nevyplňovat
+            <input ref={honeypot} type="text" name="website" tabIndex={-1} autoComplete="off" />
+          </label>
+        </div>
         <div className="flex flex-col-reverse gap-2 border-t border-line pt-6 sm:flex-row sm:justify-end">
           <Button variant="secondary" loading={savingDraft} disabled={submitting} icon={<Save aria-hidden className="size-4" />} onClick={() => void handle('draft')}>
             Uložit rozpracovanou

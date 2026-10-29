@@ -45,7 +45,9 @@ export const DECLARATIONS: ReadonlyArray<{ key: keyof Declarations; label: strin
 ];
 
 export const DOCUMENT_RULES = {
-  maxBytes: 10 * 1024 * 1024,
+  /** Musí odpovídat limitu serverové funkce api/applications.ts. */
+  maxBytes: 3 * 1024 * 1024,
+  maxTotalBytes: 3 * 1024 * 1024,
   extensions: ['pdf', 'jpg', 'jpeg', 'png'],
   maxFiles: 6,
 } as const;
@@ -79,6 +81,6 @@ export function checkDocumentFile(file: { name: string; size: number }): string 
   const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
   if (!(DOCUMENT_RULES.extensions as readonly string[]).includes(ext)) return 'Přilož prosím soubor PDF, JPG nebo PNG.';
   if (file.size <= 0) return 'Soubor je prázdný.';
-  if (file.size > DOCUMENT_RULES.maxBytes) return 'Soubor je větší než 10 MB.';
+  if (file.size > DOCUMENT_RULES.maxBytes) return 'Soubor je větší než 3 MB. Zkus ho zmenšit nebo naskenovat v nižším rozlišení.';
   return null;
 }

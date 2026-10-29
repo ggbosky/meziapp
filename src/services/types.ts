@@ -1,6 +1,7 @@
 import type { Result } from '../domain/result';
 import type { SlotState } from '../domain/rules';
 import type { City } from '../domain/places';
+import type { ApplicationDelivery } from './delivery';
 import type {
   AgeGroup,
   ApplicationFields,
@@ -214,6 +215,8 @@ export interface DemoService {
 
 export interface AppServices {
   now: () => Date;
+  /** Doručení přihlášek odborníků provoznímu týmu (e-mailem přes server). */
+  delivery: ApplicationDelivery;
   demo: DemoService;
   session: SessionService;
   profiles: ProfileService;

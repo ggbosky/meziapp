@@ -74,6 +74,20 @@ Aby se za psychologa nemohl vydávat kdokoli, prochází každý žadatel ověř
 
 V prototypu je ověření simulované: soubory se nikam neodesílají (uloží se jen název a velikost) a nic se nekontroluje proti skutečným registrům. Pro ostrý provoz je potřeba bezpečné úložiště dokladů, ověření totožnosti (bankovní identita nebo Identita občana), výpis z rejstříku trestů a s odborným garantem určit, proti kterým registrům a profesním organizacím se odbornost ověřuje.
 
+## Odesílání přihlášek e-mailem
+
+Odeslaná přihláška odborníka (včetně dokladů jako příloh) přijde e-mailem provoznímu týmu. Odesílá ji serverová funkce `api/applications.ts` na Vercelu přes službu [Resend](https://resend.com), takže klíč ke službě zůstává na serveru. Funkce znovu kontroluje všechny údaje, skutečný typ příloh podle obsahu (PDF, JPG, PNG, dohromady nejvýš 3 MB), vyžaduje souhlas se zpracováním údajů a má past na roboty.
+
+Nastavení (Vercel → Project → Settings → Environment Variables, pak nové nasazení):
+
+| Proměnná | Význam |
+| --- | --- |
+| `RESEND_API_KEY` | API klíč ze služby Resend |
+| `APPLICATION_TO_EMAIL` | kam přihlášky chodí (víc adres oddělte čárkou) |
+| `APPLICATION_FROM_EMAIL` | nepovinné; odesílatel, např. `Mezi <prihlasky@vase-domena.cz>`. Bez ověřené domény se použije `onboarding@resend.dev`, které umí posílat jen na e-mail účtu v Resendu. |
+
+Dokud proměnné nejsou nastavené, funkce vrací 503 a aplikace přihlášku uloží jen v ukázce s jasným upozorněním. Na verzích bez serveru (náhled na claude.ai, GitHub Pages) se chová stejně.
+
 ## Poloha, osobní setkání a dospívající
 
 - Klient může zadat nejbližší větší město (bez adresy). Přihlášenému klientovi se uloží k účtu, nepřihlášenému jen do prohlížeče. Seznam psychologů pak ukáže sekci „Ve tvém okolí“ (do 50 km vzdušnou čarou mezi středy měst, nastavitelné v konfiguraci) a u každého odborníka přibližnou vzdálenost.

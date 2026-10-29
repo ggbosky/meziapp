@@ -33,6 +33,7 @@ import {
   validateProfileEdit,
 } from '../../domain/validation';
 import { DemoStore, type StorageLike } from '../../storage/store';
+import { localOnlyDelivery, type ApplicationDelivery } from '../delivery';
 import type {
   AdminAppointmentView,
   AdminProfileView,
@@ -52,6 +53,7 @@ export interface LocalServicesOptions {
   now?: () => Date;
   storageKey?: string;
   seed?: (now: Date) => DemoState;
+  delivery?: ApplicationDelivery;
 }
 
 export type LocalServices = AppServices & { store: DemoStore };
@@ -827,5 +829,5 @@ export function createLocalServices(options: LocalServicesOptions): LocalService
     dismissRecoveryNotice: () => store.dismissRecoveryNotice(),
   };
 
-  return { store, now, demo, session, profiles, applications, availability, appointments, admin };
+  return { store, now, delivery: options.delivery ?? localOnlyDelivery, demo, session, profiles, applications, availability, appointments, admin };
 }
