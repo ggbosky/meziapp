@@ -21,7 +21,7 @@ import { useCurrentUser, useDemoSnapshot, useServices } from '../../app/AppConte
 import { appConfig } from '../../config/app';
 import { initials } from '../../domain/text';
 import { cn } from '../ui/cn';
-import { Logo, LogoMark } from '../ui/Logo';
+import { Logo } from '../ui/Logo';
 import { ResetDemoButton } from './ResetDemoButton';
 import { ROLE_LABEL } from './roleHome';
 
@@ -108,7 +108,7 @@ export function Sidebar() {
     );
   return (
     <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-surface px-4 py-5 lg:flex">
-      <Link to="/" className="mb-6 rounded-xl px-2" aria-label="Domů">
+      <Link to="/" className="mb-6 rounded-xl px-2" aria-label={`${appConfig.name}, domů`}>
         <Logo />
       </Link>
       <nav aria-label="Hlavní navigace" className="flex flex-1 flex-col gap-6 overflow-y-auto">
@@ -167,9 +167,8 @@ export function MobileTopBar() {
   return (
     <div className="sticky top-0 z-30 border-b border-line/70 bg-canvas/90 backdrop-blur-md lg:hidden">
       <div className="container-page flex h-14 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 rounded-xl" aria-label="Domů">
-          <LogoMark className="size-8" />
-          <span className="font-round text-xl font-extrabold tracking-tight text-brand-900">{appConfig.name}</span>
+        <Link to="/" className="flex items-center rounded-xl" aria-label={`${appConfig.name}, domů`}>
+          <Logo size="sm" />
         </Link>
         <Link
           to="/vyzkouset"

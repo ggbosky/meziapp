@@ -10,7 +10,7 @@ Principy služby: všechny konzultace jsou zdarma, bez předplatného, kreditů,
 
 React 19, TypeScript (strict), Vite, Tailwind CSS 4, React Router (HashRouter), ikony Lucide, Vitest a Testing Library. Písma Nunito (nadpisy) a Figtree (text) jsou self-hostovaná přes Fontsource, takže se nic nenačítá z cizích serverů. Rozhraní je navržené primárně pro telefon: dolní lišta s kartami podle role, na počítači boční panel. Ilustrace jsou vlastní SVG v `src/components/ui/Illustrations.tsx`.
 
-Název aplikace se mění na jednom místě: `src/config/app.ts` (`appConfig.name`). Tamtéž jsou texty, pravidla rezervací a místo pro ověřené krizové kontakty.
+Název aplikace se mění na jednom místě: `src/config/app.ts` (`appConfig.name`). Logo je v `src/assets/brand/` (značka `mezi-mark.png` a celé logo `mezi-logo.png`, obojí s průhledným pozadím) a ikony aplikace v `public/` (`favicon.png`, `apple-touch-icon.png`). V hlavičce se ke značce vypisuje název z konfigurace, takže přejmenování logo nerozbije. Tamtéž jsou texty, pravidla rezervací a místo pro ověřené krizové kontakty.
 
 ## Instalace a lokální spuštění
 

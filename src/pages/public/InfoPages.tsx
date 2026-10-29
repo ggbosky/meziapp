@@ -6,6 +6,7 @@ import { usePageTitle } from '../../components/layout/usePageTitle';
 import { Button, ButtonLink, buttonClasses } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { LogoLockup } from '../../components/ui/Logo';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { appConfig, type UrgentAudience } from '../../config/app';
 import { DEMO_USER_IDS } from '../../data/seed';
@@ -165,6 +166,7 @@ export function AboutPrototypePage() {
   }[snapshot.persistence];
   return (
     <div className="container-page max-w-3xl py-10 sm:py-14">
+      <LogoLockup className="mb-6 w-28 sm:w-32" />
       <PageHeader
         eyebrow="Demonstrační prototyp"
         title={`O prototypu ${appConfig.name}`}
@@ -197,7 +199,8 @@ export function AboutPrototypePage() {
           <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed text-ink/90">
             <li>Backend s databází, skutečným přihlášením a autorizací na serveru.</li>
             <li>Právní a odborné posouzení: zpracování osobních údajů, podmínky služby, odborný garant.</li>
-            <li>Ověřené krizové kontakty a postup pro situace, kdy klient potřebuje akutní pomoc.</li>
+            <li>Potvrzení krizových kontaktů odborným garantem a postup pro situace, kdy klient potřebuje akutní pomoc.</li>
+            <li>Právní posouzení konzultací s dospívajícími (souhlas rodičů, mlčenlivost, ověření věku).</li>
             <li>Bezpečné videohovory, e-mailová oznámení a ověřování dokladů odborníků.</li>
           </ul>
         </Card>

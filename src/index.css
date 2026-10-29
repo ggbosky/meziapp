@@ -27,6 +27,11 @@
   --color-line: #e2ebe4;
   --color-line-strong: #c8d8cd;
 
+  /* Barvy z loga Mezi */
+  --color-logo-navy: #193755;
+  --color-logo-blue: #5ba1d4;
+  --color-logo-teal: #3cba98;
+
   --color-sun: #ffd46e;
   --color-sun-soft: #fff4d3;
   --color-peach: #f6b493;

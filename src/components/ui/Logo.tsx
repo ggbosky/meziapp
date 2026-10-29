@@ -1,22 +1,33 @@
 import { appConfig } from '../../config/app';
+import markUrl from '../../assets/brand/mezi-mark.png';
+import lockupUrl from '../../assets/brand/mezi-logo.png';
 import { cn } from './cn';
 
-/** Abstraktní symbol: dva prolínající se kruhy — dva lidé, mezi nimiž vzniká prostor. */
+/**
+ * Logo Mezi. Značka je obrázek z dodaného loga, název se vypisuje
+ * z konfigurace, takže přejmenování aplikace logo nerozbije.
+ */
 export function LogoMark({ className }: { className?: string }) {
+  return <img src={markUrl} alt="" aria-hidden width={260} height={187} className={cn('h-8 w-auto select-none', className)} draggable={false} />;
+}
+
+export function Logo({ className, size = 'md' }: { className?: string; size?: 'sm' | 'md' }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={cn('size-8', className)}>
-      <rect width="32" height="32" rx="10" fill="#22644A" />
-      <circle cx="12.5" cy="16" r="6.5" fill="none" stroke="#FFFFFF" strokeWidth="2.4" />
-      <circle cx="19.5" cy="16" r="6.5" fill="none" stroke="#FFD46E" strokeWidth="2.4" />
-    </svg>
+    <span className={cn('inline-flex items-center gap-2', className)}>
+      <LogoMark className={size === 'sm' ? 'h-7' : 'h-9'} />
+      <span
+        className={cn(
+          'font-sans font-semibold uppercase leading-none tracking-[0.12em] text-logo-navy',
+          size === 'sm' ? 'text-[1.15rem]' : 'text-[1.35rem]',
+        )}
+      >
+        {appConfig.name}
+      </span>
+    </span>
   );
 }
 
-export function Logo({ className }: { className?: string }) {
-  return (
-    <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <LogoMark />
-      <span className="font-round text-[1.45rem] font-extrabold tracking-tight text-brand-900">{appConfig.name}</span>
-    </span>
-  );
+/** Celé logo (značka a nápis) pro větší plochy. Obsahuje původní nápis MEZI. */
+export function LogoLockup({ className }: { className?: string }) {
+  return <img src={lockupUrl} alt={`Logo ${appConfig.name}`} width={324} height={310} className={cn('h-auto select-none', className)} draggable={false} />;
 }
